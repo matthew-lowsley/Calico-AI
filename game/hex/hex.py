@@ -20,7 +20,6 @@ class Hex:
         self.r = r_
         self.s = s_
         assert(self.q + self.r + self.s == 0)
-        print(self)
 
     def equal(self, hex) -> bool:
         return self.q == hex.q and self.r == hex.r and self.s == hex.s

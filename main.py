@@ -1,17 +1,20 @@
 import pygame
 import math
 
-from hex.hex import Hex, hex_to_pixel, Vector2
+from game.hex.hex import Hex, hex_to_pixel, Vector2
+from game.props.board import Board
 
 WIN = pygame.display.set_mode((960, 720))
 pygame.display.set_caption('Calico')
 
 FPS = 60
 HEX_SIZE = Vector2(50, 50)
-OFFSET = Vector2(960/2, 640/2)
+OFFSET = Vector2(200, 50)
 
-hex = Hex(0, 0, 0)
-hex.get_all_neighbors()
+#hex = Hex(0, 0, 0)
+#hex.get_all_neighbors()
+
+board = Board()
 
 def draw_hex(hex : Hex):
         position = hex_to_pixel(hex, HEX_SIZE, OFFSET)
@@ -26,7 +29,7 @@ def draw_hex(hex : Hex):
 def draw():
     WIN.fill((255, 255, 255))
 
-    draw_hex(hex)
+    board.draw(HEX_SIZE, OFFSET, WIN)
 
     pygame.display.update()
 
@@ -34,6 +37,8 @@ def main():
 
     running = True
     clock = pygame.time.Clock()
+    board.create_board()
+    board.print_board()
     
     while running:
 
