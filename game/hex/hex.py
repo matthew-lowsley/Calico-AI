@@ -51,3 +51,24 @@ def hex_to_pixel(hex : Hex, size : Vector2, offset : Vector2):
         y = (size.y * (3/2 * hex.r)) + offset.y
         return Vector2(x, y)
     
+def cube_round(frac : Vector3):
+    q = round(frac.x)
+    r = round(frac.y)
+    s = round(frac.z)
+
+    q_diff = abs(q - frac.x)
+    r_diff = abs(r - frac.y)
+    s_diff = abs(s - frac.z)
+
+    if q_diff > r_diff and q_diff > s_diff:
+        q = -r-s
+    elif r_diff > s_diff:
+        r = -q-s
+    else:
+        s = -q-r
+    return Vector3(q, r, s)
+
+def pixel_to_hex(position : Vector2, offset : Vector2, size : Vector2):
+    q = (math.sqrt(3)/3 * (position.x - offset.x) - 1.0/3 * (position.y - offset.y)) / size.x
+    r = (2.0/3 * (position.y - offset.y) ) / size.y
+    return cube_round(Vector3(q, r, -q-r))
