@@ -29,9 +29,9 @@ class Board:
         space = self.get_space(space)
         print(space)
         if space == None or space.tile != None:
-            return False
+            return False, 0
         space.tile = tile
-        return True
+        return True, 0
 
     def get_space(self, space : Space):
         key = tuple([space.q, space.r, space.s])

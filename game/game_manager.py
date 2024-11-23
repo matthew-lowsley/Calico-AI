@@ -1,5 +1,8 @@
 from .props.board import Board
+from .props.tile import Tile
 from .player.human_player import Human_Player
+from .constants import Colour, Pattern
+
 
 import pygame
 
@@ -22,11 +25,19 @@ class Game_Manager:
 
         for board in self.boards:
             board.create_board()
+        
+        self.give_starting_game()
+
+    def give_starting_game(self):
+
+        for player in self.players:
+            player.hand = [Tile(Colour.DarkBlue, Pattern.CHURCHES), Tile(Colour.DarkBlue, Pattern.CHURCHES)]
 
     def draw(self):
         self.win.fill((255, 255, 255))
 
         self.boards[self.current_player].draw(self.win)
+        self.players[self.current_player].draw_hand(self.win)
 
         pygame.display.update()
 

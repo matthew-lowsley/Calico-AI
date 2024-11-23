@@ -21,6 +21,9 @@ class Pattern(Enum):
 
 WIDTH, HEIGHT = 960, 720
 
+hand_positions = [Vector2(700, 650), Vector2(800, 650), Vector2(700,750), Vector2(800, 750)]
+
+
 FPS = 60
 HEX_SIZE = Vector2(50, 50)
 OFFSET = Vector2(200, 50)
