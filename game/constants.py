@@ -21,7 +21,7 @@ class Pattern(Enum):
 
 WIDTH, HEIGHT = 960, 720
 
-hand_positions = [Vector2(700, 650), Vector2(800, 650), Vector2(700,750), Vector2(800, 750)]
+hand_positions = [Vector2(700, 620), Vector2(800, 620), Vector2(700,670), Vector2(800, 670)]
 
 
 FPS = 60

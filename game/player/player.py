@@ -15,7 +15,7 @@ class Player:
         raise NotImplementedError
     
     def take_tile(self, tile):
-        for i in range(self, tile):
+        for i in range(len(self.hand)):
             if self.hand[i] == None:
                 self.hand[i] = tile
     

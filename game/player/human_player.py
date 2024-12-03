@@ -4,7 +4,7 @@ from .player import Player
 from ..props.board import Board, Space
 from ..hex.hex import pixel_to_hex, Vector2
 from ..constants import HEX_SIZE, OFFSET, Colour, Pattern, hand_positions
-from ..props.tile import Tile
+from ..props.tile import Tile, Shop
 
 class Human_Player(Player):
 
@@ -30,6 +30,13 @@ class Human_Player(Player):
             if self.hand[i] != None:
                 if self.hand_areas[i].collidepoint(mouse_x, mouse_y):
                     self.selected = i
+    
+    def select_from_shop(self, shop, mouse_x, mouse_y):
+        for i in range(len(shop.tiles)):
+            if shop.shop_areas[i].collidepoint(mouse_x, mouse_y):
+                self.take_tile(shop.take_tile(index=i))
+                return True
+        return False
 
     def place(self, board, mouse_x, mouse_y):
         space = pixel_to_hex(Vector2(mouse_x, mouse_y), OFFSET, HEX_SIZE)
@@ -44,7 +51,7 @@ class Human_Player(Player):
     def remove_from_hand(self):
         self.hand[self.selected] = None
 
-    def act(self, board : Board, events):
+    def act(self, board : Board, shop : Shop, events):
 
         for event in events:
 
@@ -60,6 +67,15 @@ class Human_Player(Player):
                     self.select_from_hand(mouse_x, mouse_y)
                 
                 else:
-                    self.place(board, mouse_x, mouse_y)
-                    return True
+                    if self.last_placed == None:
+                        self.place(board, mouse_x, mouse_y)
+                    else:
+                        if self.select_from_shop(shop, mouse_x, mouse_y):
+                            self.selected = None
+                            self.last_placed = None
+                            return True
+                        else:
+                            break
+        return False
+        
                     

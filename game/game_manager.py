@@ -1,5 +1,5 @@
 from .props.board import Board
-from .props.tile import Tile
+from .props.tile import Tile, Shop
 from .player.human_player import Human_Player
 from .constants import Colour, Pattern
 
@@ -16,12 +16,15 @@ class Game_Manager:
         self.players = [Human_Player()]
         self.turn = 0
 
+        self.shop = Shop()
+
         self.restart_game()
 
     def restart_game(self):
 
         self.player = 0
         self.turn = 0
+        self.shop.stock_shop()
 
         for board in self.boards:
             board.create_board()
@@ -39,6 +42,8 @@ class Game_Manager:
         self.boards[self.current_player].draw(self.win)
         self.players[self.current_player].draw_hand(self.win)
 
+        self.shop.draw(self.win)
+
         pygame.display.update()
 
     def next_turn(self):
@@ -50,6 +55,6 @@ class Game_Manager:
 
         self.draw()
 
-        if self.players[self.current_player].act(self.boards[self.current_player], events):
+        if self.players[self.current_player].act(self.boards[self.current_player], self.shop, events):
             self.draw()
             self.next_turn()
