@@ -31,7 +31,8 @@ class Board:
         if space == None or space.tile != None:
             return False, 0
         space.tile = tile
-        return True, 0
+        points = self.analyse_placement(space)
+        return True, points
 
     def get_space(self, space : Space):
         key = tuple([space.q, space.r, space.s])
@@ -68,3 +69,64 @@ class Board:
             self.draw_space(win, position)
             if space.tile != None:
                 space.tile.draw(win, position, HEX_SIZE)
+
+    def find_existing_spaces(self, spaces):
+        existing_spaces = []
+        for space in spaces:
+            space = self.get_space(space)
+            if space != None:
+                existing_spaces.append(space)
+        return existing_spaces
+
+    def contains_tiles(self, spaces):
+        contains_tiles = []
+        for space in spaces:
+            if space.tile != None:
+                contains_tiles.append(space)
+        return contains_tiles
+
+    def find_chain(self, space):
+
+        colour = space.tile.colour
+        pattern = space.tile.pattern
+
+        visited = set()
+        chain = []
+
+        visited.add(space)
+        chain.append(space)
+
+        def dfs(start : Space):
+            neightbors = self.contains_tiles(self.find_existing_spaces(start.get_all_neighbors()))
+            for neightbor in neightbors:
+                if neightbor not in visited:
+                    visited.add(neightbor)
+                    if neightbor.tile.colour != colour:
+                        continue
+                    chain.append(neightbor)
+                    dfs(neightbor)
+        
+        dfs(space)
+
+        return chain
+
+    def analyse_colour(self, space):
+        chain = self.find_chain(space)
+        points = 0
+        if len(chain) >= 3:
+            points = 3
+        return points
+    
+    def analyse_placement(self, space):
+
+        if not space.tile:
+            return 0
+        
+        if not self.get_space(space):
+            return 0
+
+        points = 0
+
+        points += self.analyse_colour(space)
+
+        return points
