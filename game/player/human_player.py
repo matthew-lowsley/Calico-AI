@@ -4,7 +4,9 @@ from .player import Player
 from ..props.board import Board, Space
 from ..hex.hex import pixel_to_hex, Vector2
 from ..constants import HEX_SIZE, OFFSET, Colour, Pattern, hand_positions
-from ..props.tile import Tile, Shop
+from ..props.tile import Objective_Tile, Tile, Shop
+
+OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
 
 class Human_Player(Player):
 
@@ -48,6 +50,20 @@ class Human_Player(Player):
             print(self.points)
         else:
             self.selected = None
+    
+    def place_objective(self, board : Board, mouse_x, mouse_y):
+        space_coords = pixel_to_hex(Vector2(mouse_x, mouse_y), OFFSET, HEX_SIZE)
+        space = board.get_space(Space(space_coords.x, space_coords.y, space_coords.z))
+        for obj_space in OBJECTIVES_SPACES:
+            if space != None:
+                if space.equal(obj_space):
+                    self.place(board, mouse_x, mouse_y)
+                    self.objectives_placed += 1
+                    self.last_placed = None
+                    self.selected = None
+                    if self.objectives_placed == 3:
+                        return True
+                    return False
 
     def remove_from_hand(self):
         self.hand[self.selected] = None
@@ -69,7 +85,10 @@ class Human_Player(Player):
                 
                 else:
                     if self.last_placed == None:
-                        self.place(board, mouse_x, mouse_y)
+                        if type(self.hand[self.selected]) is Objective_Tile:
+                            return self.place_objective(board, mouse_x, mouse_y)
+                        else:
+                            self.place(board, mouse_x, mouse_y)
                     else:
                         if self.select_from_shop(shop, mouse_x, mouse_y):
                             self.selected = None

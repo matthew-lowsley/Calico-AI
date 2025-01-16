@@ -1,6 +1,6 @@
 from ..hex.hex import Hex, hex_to_pixel, Vector2
 from ..constants import HEX_SIZE, OFFSET
-from .tile import Tile
+from .tile import Objective_Tile, Tile
 
 import math
 import pygame
@@ -85,8 +85,8 @@ class Board:
                 contains_tiles.append(space)
         return contains_tiles
 
-    def find_chain(self, space):
-
+    def find_chain(self, space, mode="colour"):
+        
         colour = space.tile.colour
         pattern = space.tile.pattern
 
@@ -95,26 +95,95 @@ class Board:
 
         visited.add(space)
         chain.append(space)
+        chain_broken = False
 
         def dfs(start : Space):
-            neightbors = self.contains_tiles(self.find_existing_spaces(start.get_all_neighbors()))
-            for neightbor in neightbors:
-                if neightbor not in visited:
-                    visited.add(neightbor)
-                    if neightbor.tile.colour != colour:
-                        continue
-                    chain.append(neightbor)
-                    dfs(neightbor)
-        
+            nonlocal chain_broken
+            neighbors = self.contains_tiles(self.find_existing_spaces(start.get_all_neighbors()))
+            for neighbor in neighbors:
+                if (neighbor not in visited) and (type(neighbor.tile) is not Objective_Tile):
+                    visited.add(neighbor)
+                    if mode == "colour":
+                        if(neighbor.tile.colour != colour):
+                            continue
+                        if(neighbor.tile.colour_used == True):
+                            chain_broken = True
+                            continue
+                    if mode == "pattern":
+                        if(neighbor.tile.pattern != pattern):
+                            continue
+                        if(neighbor.tile.pattern_used == True):
+                            chain_broken = True
+                            continue
+                    chain.append(neighbor)
+                    dfs(neighbor)
         dfs(space)
 
+        if chain_broken:
+            self.disable_chain(chain, mode=mode)
+            return [space]
+
         return chain
+    
+    def disable_chain(self, chain, mode="colour"):
+
+        print("running!")
+
+        for space in chain:
+            if mode == "colour":
+                space.tile.colour_used = True
+            elif mode == "pattern":
+                space.tile.pattern_used = True
+    
+    def complete_objective(self, objective):
+        colour_dict = {}
+        pattern_dict = {}
+        colours_achieved = False
+        patterns_achieved = False
+        objective_rules_values = list(objective.tile.objective_rules.values())
+
+        # Counts how many of a specific colour and how many of a specific pattern surround the objective tile.
+        # The final result is an array contain the number of a same colour or pattern. E.g AAAABB = [4, 2], ABCDEF = [1, 1, 1, 1, 1, 1]
+        neighbors = self.contains_tiles(self.find_existing_spaces(objective.get_all_neighbors()))
+        for neighbor in neighbors:
+            if neighbor.tile.colour not in colour_dict:
+                colour_dict[neighbor.tile.colour] = 0
+            if neighbor.tile.pattern not in pattern_dict:
+                pattern_dict[neighbor.tile.pattern] = 0
+            colour_dict[neighbor.tile.colour] += 1
+            pattern_dict[neighbor.tile.pattern] += 1
+        colour_dict_values_sorted = list(reversed(sorted(colour_dict.values())))
+        pattern_dict_values_sorted = list(reversed(sorted(pattern_dict.values())))
+
+        # This section checks if the colour and pattern arrays are the same as the objective rule on the tile.
+        colours_achieved = (colour_dict_values_sorted == objective_rules_values)
+        patterns_achieved = (pattern_dict_values_sorted == objective_rules_values)
+
+        # This section checks how many points should be awarded.
+        if colours_achieved and patterns_achieved:
+            print("Gold Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
+            return objective.tile.gold_points
+        elif colours_achieved ^ patterns_achieved:
+            print("Blue Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
+            return objective.tile.blue_points
+        else:
+            print("No Objective Achieved "+str(colour_dict_values_sorted)+" != "+str(objective_rules_values)+" and "+str(pattern_dict_values_sorted)+" != "+str(objective_rules_values))
+            return 0
+    
+    def analyse_objectives(self, objectives):
+        points = 0
+        for objective in objectives:
+            neighbors = self.contains_tiles(self.find_existing_spaces(objective.get_all_neighbors()))
+            if len(neighbors) == 6:
+                points += self.complete_objective(objective)
+        return points
 
     def analyse_colour(self, space):
         chain = self.find_chain(space)
         points = 0
         if len(chain) >= 3:
             points = 3
+            self.disable_chain(chain) 
         return points
     
     def analyse_placement(self, space):
@@ -124,9 +193,20 @@ class Board:
         
         if not self.get_space(space):
             return 0
+        
+        if type(space.tile) is Objective_Tile:
+            return 0
 
         points = 0
 
         points += self.analyse_colour(space)
+
+        neighbors = self.contains_tiles(self.find_existing_spaces(space.get_all_neighbors()))
+        objectives = []
+        for neighbor in neighbors:
+            if type(neighbor.tile) is Objective_Tile:
+                objectives.append(neighbor)
+        if len(objectives) > 0:
+            points += self.analyse_objectives(objectives)
 
         return points
