@@ -21,6 +21,7 @@ class Board:
 
     def __init__(self):
         self.board = {}
+        self.cats = None
     
     def insert_space(self, space : Space):
         self.board[tuple([space.q, space.r, space.s])] = space
@@ -186,6 +187,15 @@ class Board:
             self.disable_chain(chain) 
         return points
     
+    def analyse_pattern(self, space):
+        chain = self.find_chain(space, mode="pattern")
+        cat = self.cats[space.tile.pattern.name]
+        points = cat.analyse_pattern(chain, self)
+        if points > 0:
+            self.disable_chain(chain, mode="pattern") 
+            print(str(cat)+" Got! "+ str(points) +" points!")
+        return points
+    
     def analyse_placement(self, space):
 
         if not space.tile:
@@ -200,6 +210,7 @@ class Board:
         points = 0
 
         points += self.analyse_colour(space)
+        points += self.analyse_pattern(space)
 
         neighbors = self.contains_tiles(self.find_existing_spaces(space.get_all_neighbors()))
         objectives = []

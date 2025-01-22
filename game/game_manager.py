@@ -3,6 +3,7 @@ from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
 from .constants import FONT, Colour, Objective, Pattern
+from .props.cat import *
 
 import numpy as np
 import copy
@@ -13,6 +14,19 @@ objective_tiles = np.array([Objective_Tile(Objective.AAAABB), Objective_Tile(Obj
                             Objective_Tile(Objective.AAABBC), Objective_Tile(Objective.AABBCC),
                             Objective_Tile(Objective.AABBCD), Objective_Tile(Objective.ABCDEF)])
 
+lv1_cats = [Oliver, Callie, Tibbit, Rumi]
+lv2_cats = [Coconut, Tecolote, Cira, Almond]
+lv3_cats = [Gwenivere, Leo]
+
+starting_cats = {
+    'SPOTS': Rumi(Pattern.SPOTS),
+    'CHURCHES': Rumi(Pattern.CHURCHES),
+    'FLOWERS': Tecolote(Pattern.FLOWERS),
+    'STRIPES': Tecolote(Pattern.STRIPES),
+    'VINES': Leo(Pattern.VINES),
+    'FERNS': Leo(Pattern.FERNS)
+}
+
 class Game_Manager:
 
     def __init__(self, win):
@@ -22,6 +36,8 @@ class Game_Manager:
         self.boards = [Board(), Board()]
         self.players = [Human_Player(), Random_Player()]
         self.turn = 0
+        self.cats = None
+        self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
 
         self.bag = Bag()
         self.shop = Shop(self.bag)
@@ -37,6 +53,10 @@ class Game_Manager:
         self.bag.fill_bag()
         self.shop.stock_shop()
 
+        #CHANGE THIS TO HAVE RANDOM CATS AGAIN
+        self.cats = self.configure_cats()
+        #self.cats = starting_cats
+
         for player in self.players:
             np.random.shuffle(objective_tiles)
             player.reset()
@@ -44,7 +64,23 @@ class Game_Manager:
 
         for board in self.boards:
             board.create_board()
+            board.cats = self.cats
+    
+    def configure_cats(self):
         
+        cats = [lv1_cats, lv2_cats, lv3_cats]
+        patterns = np.array([pattern for pattern in Pattern])
+        np.random.shuffle(patterns)
+        patterns = patterns.tolist()
+        cats_pattern_dict = {}
+
+        for i in range(0,6,2):
+            cats[int(i/2)] = np.array(cats[int(i/2)])
+            np.random.shuffle(cats[int(i/2)])
+            cats_pattern_dict[patterns[i].name] = cats[int(i/2)][0](patterns[i])
+            cats_pattern_dict[patterns[i+1].name] = cats[int(i/2)][0](patterns[i+1])
+
+        return cats_pattern_dict
 
     def give_starting_hand(self):
 
@@ -62,6 +98,12 @@ class Game_Manager:
             self.win.blit(points, self.points_areas[i])
 
         self.shop.draw(self.win)
+
+        cats = list(self.cats.values())
+        patterns = list(self.cats.keys())
+        for i in range(0, 6, 2):
+            cat_descriptions = FONT.render(str(cats[i].name)+": "+str(cats[i].description)+" - "+str(patterns[i])+" / "+str(patterns[i+1]), True, (0,0,0))
+            self.win.blit(cat_descriptions, self.cat_areas[int(i/2)])
 
         pygame.display.update()
 
