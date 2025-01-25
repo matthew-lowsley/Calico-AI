@@ -1,6 +1,6 @@
 from ..hex.hex import Hex, hex_to_pixel, Vector2
-from ..constants import HEX_SIZE, OFFSET
-from .tile import Objective_Tile, Tile
+from ..constants import HEX_SIZE, OFFSET, Colour, Pattern
+from .tile import Colour_Pattern_Tile, Objective_Tile, Tile
 
 import math
 import pygame
@@ -221,3 +221,12 @@ class Board:
             points += self.analyse_objectives(objectives)
 
         return points
+
+    def create_perimeter(self, tiles):
+
+            for tile in tiles:
+                colour = Colour[tile['colour']]
+                pattern = Pattern[tile['pattern']]
+                self.board[tuple(tile['coordinates'])].tile = Colour_Pattern_Tile(colour, pattern)
+        
+        

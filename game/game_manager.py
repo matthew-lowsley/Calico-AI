@@ -2,12 +2,13 @@ from game.player.random_player import Random_Player
 from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
-from .constants import FONT, Colour, Objective, Pattern
+from .constants import FONT, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
 from .props.cat import *
 
 import numpy as np
 import copy
 import pygame
+import json
 
 
 objective_tiles = np.array([Objective_Tile(Objective.AAAABB), Objective_Tile(Objective.AAABBB), 
@@ -34,13 +35,14 @@ class Game_Manager:
 
         self.current_player = 0
         self.boards = [Board(), Board()]
-        self.players = [Human_Player(), Random_Player()]
+        self.players = [Random_Player(), Random_Player()]
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
 
         self.bag = Bag()
         self.shop = Shop(self.bag)
+        self.final_turn = len(self.players) * 23
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
@@ -57,13 +59,18 @@ class Game_Manager:
         self.cats = self.configure_cats()
         #self.cats = starting_cats
 
+        boards = self.read_json()
+        board_colours = np.array(['blue', 'green', 'yellow', 'purple'])
+
         for player in self.players:
             np.random.shuffle(objective_tiles)
             player.reset()
             player.hand = copy.deepcopy(objective_tiles[:4])
 
-        for board in self.boards:
+        np.random.shuffle(board_colours)
+        for i, board in enumerate(self.boards):
             board.create_board()
+            board.create_perimeter(boards['boards'][board_colours[i]])
             board.cats = self.cats
     
     def configure_cats(self):
@@ -107,9 +114,30 @@ class Game_Manager:
 
         pygame.display.update()
 
+    def draw_end_screen(self):
+        self.win.fill((255, 255, 255))
+
+        winner, highest = self.calculate_winner()
+                
+        message = FONT.render("Player "+str(winner+1)+" Wins! With "+str(highest)+" Points!", True, (0,0,0))
+        self.win.blit(message, pygame.Rect(WIDTH/2, HEIGHT/2, 50, 50))
+
+        pygame.display.update()
+
+    def calculate_winner(self):
+
+        winner = 0
+        highest_score = 0
+        for i in range(len(self.players)-1, 0, -1):
+            if self.players[i].points >= highest_score:
+                winner = i
+                highest_score = self.players[i].points
+        
+        return winner, highest_score
+
     def next_turn(self):
         self.turn += 1
-        pygame.time.wait(1500)
+        #pygame.time.wait(1500)
 
     def step(self, events):
 
@@ -124,3 +152,18 @@ class Game_Manager:
                 self.give_starting_hand()
 
             self.next_turn()
+
+        if self.turn >= self.final_turn:
+            self.draw_end_screen()
+            self.restart_game()
+
+            pygame.time.wait(3000)
+
+            return True
+    
+    def read_json(self):
+
+        with open(BOARD_JSON, 'r') as file:
+            boards = json.load(file)
+
+        return boards

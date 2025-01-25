@@ -1,0 +1,32 @@
+{
+    "boards":{
+        "blue":[
+            {"colour":"Pink","pattern":"VINES","coordinates":[0,0,0]},{"colour":"Yellow","pattern":"STRIPES","coordinates":[1,0,-1]},{"colour":"LightBlue","pattern":"VINES","coordinates":[2,0,-2]},{"colour":"Pink","pattern":"FERNS","coordinates":[3,0,-3]},
+            {"colour":"Purple","pattern":"CHURCHES","coordinates":[4,0,-4]},{"colour":"Yellow","pattern":"FLOWERS","coordinates":[5,0,-5]},{"colour":"Green","pattern":"STRIPES","coordinates":[6,0,-6]},{"colour":"DarkBlue","pattern":"SPOTS","coordinates":[6,1,-7]},
+            {"colour":"Purple","pattern":"VINES","coordinates":[5,2,-7]},{"colour":"Yellow","pattern":"FERNS","coordinates":[5,3,-8]},{"colour":"Green","pattern":"CHURCHES","coordinates":[4,4,-8]},{"colour":"DarkBlue","pattern":"FLOWERS","coordinates":[4,5,-9]},
+            {"colour":"LightBlue","pattern":"STRIPES","coordinates":[3,6,-9]},{"colour":"Pink","pattern":"SPOTS","coordinates":[2,6,-8]},{"colour":"Green","pattern":"VINES","coordinates":[1,6,-7]},{"colour":"DarkBlue","pattern":"FERNS","coordinates":[0,6,-6]},
+            {"colour":"Pink","pattern":"FLOWERS","coordinates":[-1,6,-5]},{"colour":"LightBlue","pattern":"CHURCHES","coordinates":[-2,6,-4]},{"colour":"Purple","pattern":"FLOWERS","coordinates":[-3,6,-3]},{"colour":"Yellow","pattern":"SPOTS","coordinates":[-2,5,-3]},
+            {"colour":"Purple","pattern":"STRIPES","coordinates":[-2,4,-2]},{"colour":"LightBlue","pattern":"FERNS","coordinates":[-1,3,-2]},{"colour":"DarkBlue","pattern":"CHURCHES","coordinates":[-1,2,-1]},{"colour":"Green","pattern":"FLOWERS","coordinates":[0,1,-1]}],
+        "green":[
+            {"colour":"DarkBlue","pattern":"FERNS","coordinates":[0,0,0]},{"colour":"Yellow","pattern":"VINES","coordinates":[1,0,-1]},{"colour":"Green","pattern":"FERNS","coordinates":[2,0,-2]},{"colour":"DarkBlue","pattern":"STRIPES","coordinates":[3,0,-3]},
+            {"colour":"Purple","pattern":"CHURCHES","coordinates":[4,0,-4]},{"colour":"Yellow","pattern":"SPOTS","coordinates":[5,0,-5]},{"colour":"LightBlue","pattern":"VINES","coordinates":[6,0,-6]},{"colour":"Pink","pattern":"FLOWERS","coordinates":[6,1,-7]},
+            {"colour":"Purple","pattern":"FERNS","coordinates":[5,2,-7]},{"colour":"Yellow","pattern":"STRIPES","coordinates":[5,3,-8]},{"colour":"LightBlue","pattern":"CHURCHES","coordinates":[4,4,-8]},{"colour":"Pink","pattern":"SPOTS","coordinates":[4,5,-9]},
+            {"colour":"Green","pattern":"VINES","coordinates":[3,6,-9]},{"colour":"DarkBlue","pattern":"FLOWERS","coordinates":[2,6,-8]},{"colour":"LightBlue","pattern":"FERNS","coordinates":[1,6,-7]},{"colour":"Pink","pattern":"STRIPES","coordinates":[0,6,-6]},
+            {"colour":"Green","pattern":"CHURCHES","coordinates":[-1,6,-5]},{"colour":"DarkBlue","pattern":"SPOTS","coordinates":[-2,6,-4]},{"colour":"Green","pattern":"STRIPES","coordinates":[-3,6,-3]},{"colour":"Purple","pattern":"VINES","coordinates":[-2,5,-3]},
+            {"colour":"Yellow","pattern":"FLOWERS","coordinates":[-2,4,-2]},{"colour":"LightBlue","pattern":"STRIPES","coordinates":[-1,3,-2]},{"colour":"Pink","pattern":"CHURCHES","coordinates":[-1,2,-1]},{"colour":"Purple","pattern":"SPOTS","coordinates":[0,1,-1]}],
+        "yellow":[
+            {"colour":"Green","pattern":"CHURCHES","coordinates":[0,0,0]},{"colour":"DarkBlue","pattern":"FLOWERS","coordinates":[1,0,-1]},{"colour":"Yellow","pattern":"STRIPES","coordinates":[2,0,-2]},{"colour":"Purple","pattern":"SPOTS","coordinates":[3,0,-3]},
+            {"colour":"DarkBlue","pattern":"VINES","coordinates":[4,0,-4]},{"colour":"Green","pattern":"FERNS","coordinates":[5,0,-5]},{"colour":"Pink","pattern":"CHURCHES","coordinates":[6,0,-6]},{"colour":"LightBlue","pattern":"FLOWERS","coordinates":[6,1,-7]},
+            {"colour":"DarkBlue","pattern":"STRIPES","coordinates":[5,2,-7]},{"colour":"Green","pattern":"SPOTS","coordinates":[5,3,-8]},{"colour":"Pink","pattern":"VINES","coordinates":[4,4,-8]},{"colour":"LightBlue","pattern":"FERNS","coordinates":[4,5,-9]},
+            {"colour":"Yellow","pattern":"CHURCHES","coordinates":[3,6,-9]},{"colour":"Purple","pattern":"FLOWERS","coordinates":[2,6,-8]},{"colour":"Pink","pattern":"STRIPES","coordinates":[1,6,-7]},{"colour":"LightBlue","pattern":"SPOTS","coordinates":[0,6,-6]},
+            {"colour":"Yellow","pattern":"VINES","coordinates":[-1,6,-5]},{"colour":"Purple","pattern":"FERNS","coordinates":[-2,6,-4]},{"colour":"LightBlue","pattern":"VINES","coordinates":[-3,6,-3]},{"colour":"DarkBlue","pattern":"CHURCHES","coordinates":[-2,5,-3]},
+            {"colour":"Green","pattern":"FLOWERS","coordinates":[-2,4,-2]},{"colour":"Yellow","pattern":"SPOTS","coordinates":[-1,3,-2]},{"colour":"Purple","pattern":"VINES","coordinates":[-1,2,-1]},{"colour":"Pink","pattern":"FERNS","coordinates":[0,1,-1]}],
+        "purple":[
+            {"colour":"Yellow","pattern":"FLOWERS","coordinates":[0,0,0]},{"colour":"Pink","pattern":"SPOTS","coordinates":[1,0,-1]},{"colour":"Purple","pattern":"FLOWERS","coordinates":[2,0,-2]},{"colour":"Yellow","pattern":"FERNS","coordinates":[3,0,-3]},
+            {"colour":"LightBlue","pattern":"STRIPES","coordinates":[4,0,-4]},{"colour":"Pink","pattern":"CHURCHES","coordinates":[5,0,-5]},{"colour":"Green","pattern":"SPOTS","coordinates":[6,0,-6]},{"colour":"DarkBlue","pattern":"VINES","coordinates":[6,1,-7]},
+            {"colour":"LightBlue","pattern":"FLOWERS","coordinates":[5,2,-7]},{"colour":"Pink","pattern":"FERNS","coordinates":[5,3,-8]},{"colour":"Green","pattern":"STRIPES","coordinates":[4,4,-8]},{"colour":"DarkBlue","pattern":"CHURCHES","coordinates":[4,5,-9]},
+            {"colour":"Purple","pattern":"SPOTS","coordinates":[3,6,-9]},{"colour":"Yellow","pattern":"VINES","coordinates":[2,6,-8]},{"colour":"Green","pattern":"FLOWERS","coordinates":[1,6,-7]},{"colour":"DarkBlue","pattern":"FERNS","coordinates":[0,6,-6]},
+            {"colour":"Purple","pattern":"STRIPES","coordinates":[-1,6,-5]},{"colour":"Yellow","pattern":"CHURCHES","coordinates":[-2,6,-4]},{"colour":"Purple","pattern":"FERNS","coordinates":[-3,6,-3]},{"colour":"LightBlue","pattern":"SPOTS","coordinates":[-2,5,-3]},
+            {"colour":"Pink","pattern":"VINES","coordinates":[-2,4,-2]},{"colour":"Green","pattern":"FERNS","coordinates":[-1,3,-2]},{"colour":"DarkBlue","pattern":"STRIPES","coordinates":[-1,2,-1]},{"colour":"LightBlue","pattern":"CHURCHES","coordinates":[0,1,-1]}]
+        }
+}

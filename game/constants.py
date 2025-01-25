@@ -1,4 +1,5 @@
 import pygame
+import os
 from enum import Enum
 
 from .hex.hex import Vector2
@@ -6,6 +7,7 @@ from .hex.hex import Vector2
 pygame.font.init()
 
 FONT = pygame.font.Font('freesansbold.ttf', 24)
+BOARD_JSON = os.path.join("game", "boards", "boards.json")
 
 class Colour(Enum):
     Objective = -1
