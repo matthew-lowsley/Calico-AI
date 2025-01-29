@@ -1,0 +1,233 @@
+
+
+import copy
+import random
+import numpy as np
+import pygame
+from game.constants import Pattern
+from game.player.player import Player
+from game.props.board import Board, Space
+from game.props.cat import Almond, Callie, Cira, Coconut, Gwenivere, Leo, Oliver, Rumi, Tecolote, Tibbit
+from game.props.tile import Shop
+
+OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
+
+AVAILBABLE_SPACES = [Space(1,1,-2), Space(2,1,-3), Space(3,1,-4), Space(4,1,-5),
+                     Space(5,1,-6), Space(0,2,-2), Space(1,2,-3), Space(2, 2, -4),
+                     Space(3,2,-5), Space(4,2,-6), Space(0,3,-3), Space(1,3,-4),
+                     Space(2,3,-5), Space(3, 3, -6), Space(4,3,-7), Space(-1,4,-3),
+                     Space(0, 4, -4), Space(1,4,-5), Space(2,4,-6), Space(3,4,-7),
+                     Space(-1,5,-4), Space(0,5,-5), Space(1,5,-6), Space(2,5,-7),
+                     Space(3,5,-8)]
+
+class Agent(Player):
+
+    def __init__(self):
+        super().__init__()
+        self.objectives_placed = False
+        self.taken_spaces = []
+        self.available_places = []
+
+        self.reset()
+
+    def reset(self):
+
+        self.objectives_placed = False
+        self.points = 0
+        self.hand = []
+        self.taken_spaces = [0]*25
+        self.available_places = copy.deepcopy(AVAILBABLE_SPACES)
+    
+    def get_state(self, board : Board, shop : Shop, hand):
+        objectives_spaces = [tuple([0, 4, -4]), tuple([2, 2, -4]), tuple([3, 3, -6])]
+        board_state = []
+        for key in board.board.keys():
+            space = board.board[key]
+            space_state = []
+            if key in objectives_spaces:
+                space_state += [0]*6
+            else:
+                space_state += [0]*36
+            if space.tile != None:
+                colour = 0
+                pattern = space.tile.pattern.value
+                if len(space_state) == 36:
+                    colour = space.tile.colour.value
+                space_state[(colour*6)+pattern] = 1
+            board_state += space_state
+        
+        shop_state = []
+        for tile in shop.tiles:
+            tile_state = [0]*36
+            colour = tile.colour.value
+            pattern = tile.pattern.value
+            tile_state[(colour*6)+pattern] = 1
+            shop_state += tile_state
+
+        cat_state = [0]*6
+        for pattern in Pattern:
+            cat = board.cats[pattern.name]
+            #print(type(cat))
+            match type(cat).__qualname__:
+                case Oliver.__qualname__:
+                    cat_state[pattern.value] = 1
+                case Callie.__qualname__:
+                    cat_state[pattern.value] = 2
+                case Tibbit.__qualname__:
+                    cat_state[pattern.value] = 3
+                case Rumi.__qualname__:
+                    cat_state[pattern.value] = 4
+                case Coconut.__qualname__:
+                    cat_state[pattern.value] = 5
+                case Tecolote.__qualname__:
+                    cat_state[pattern.value] = 6
+                case Cira.__qualname__:
+                    cat_state[pattern.value] = 7
+                case Almond.__qualname__:
+                    cat_state[pattern.value] = 8
+                case Gwenivere.__qualname__:
+                    cat_state[pattern.value] = 9
+                case Leo.__qualname__:
+                    cat_state[pattern.value] = 10
+
+        regular_hand_state = []
+        if self.objectives_placed == False:
+            regular_hand_state = [0]*72
+        else:
+            for i in range(2):
+                tile_state = [0]*36
+                colour = self.hand[i].colour.value
+                pattern = self.hand[i].pattern.value
+                tile_state[(colour*6)+pattern] = 1
+                regular_hand_state += tile_state
+        
+        starting_hand_state = []
+        if self.objectives_placed == True:
+            starting_hand_state = [0]*24
+        else:
+            for tile in hand:
+                tile_state = [0]*6
+                if tile != None:
+                    pattern = tile.pattern.value
+                    tile_state[pattern] = 1
+                starting_hand_state += tile_state
+
+        state = board_state + shop_state + cat_state + regular_hand_state + starting_hand_state
+        #print(state)
+        #print(len(state))
+        return np.array(state)
+    
+    def act(self, board, shop, events):
+
+        if self.objectives_placed == False:
+            self.place_objectives(board, shop)
+            return True
+        
+        state = self.get_state(board, shop, self.hand)
+
+        action = self.get_action(state)
+        points = self.perform_action(action, board, shop)
+
+        print(points)
+
+        self.points += points
+
+        return True
+    
+    def place(self, board, space, hand_idx):
+        valid, points = board.insert_tile(space, self.hand[hand_idx])
+        if valid:
+            self.hand[hand_idx] = None
+            #self.points += points
+        return valid, points
+    
+    def place_objectives(self, board, shop):
+        for i in range(3):
+            state = self.get_state(board, shop, self.hand)
+            action = self.get_action(state)
+            points = self.perform_action(action, board, shop)
+        self.objectives_placed = True
+
+    def pick(self, shop, shop_idx):
+        self.take_tile(shop.take_tile(index=shop_idx))
+
+    def perform_action(self, action, board, shop):
+
+        # converts an array (of 32 elements) into a placing and picking actions
+        # element 0-24 = position to place
+        # element 25-29 = which tile in hand to place
+        # element 30-32 = which tile to pick from the shop
+
+        position = np.array(action[:25])
+        position = position.argsort() # list of indexes in the AVAILBABLE_SPACES sorted by Q-Value.
+        #print("Position: "+str(position))
+
+        hand = np.array(action[25:29])
+        hand = hand.argsort() # list of indexes in hand sorted by Q-Value.
+        #print("Hand: "+str(hand))
+
+        shop_choice = np.array(action[29:])
+        shop_choice = shop_choice.argsort() # list of indexes in shop sorted by Q-Value.
+        #print("Shop: "+str(shop_choice))
+
+        i = -1
+        j = -1
+        points = 0
+
+        #print(self.taken_spaces)
+        while True:
+            try:
+                valid, points = self.place(board, AVAILBABLE_SPACES[position[i]], hand[j])
+                if valid:
+                    self.taken_spaces[position[i]] = 1
+                    break
+                elif j == -4:
+                    j = 0
+                    i -= 1
+                else:
+                    j -= 1
+            except:
+                print("No position is valid for placing!!!")
+                pygame.time.wait(99999)
+        
+        if self.objectives_placed == True:
+            self.pick(shop, shop_choice[-1])
+
+        return points
+    
+    def get_action(self, state):
+
+        final_move = [0]*32
+
+        if True:
+
+            position = [0]*25
+            valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
+            if self.objectives_placed == False:
+                 if self.taken_spaces[7] == 0:
+                     valid_spaces[0] = 7
+                 elif self.taken_spaces[13] == 0:
+                     valid_spaces[0] = 13
+                 elif self.taken_spaces[16] == 0:
+                     valid_spaces[0] = 16
+            else:
+                random.shuffle(valid_spaces)
+            position[valid_spaces[0]] = 1
+
+            hand = [0]*4
+            if self.objectives_placed == False:
+                hand[random.randint(0,3)] = 1
+            else:
+                hand[random.randint(0,1)] = 1
+
+            pick = [0]*3
+            if self.objectives_placed:
+                pick[random.randint(0,2)] = 1
+
+            final_move = position + hand + pick
+
+        else:
+
+            pass
+
+        return final_move

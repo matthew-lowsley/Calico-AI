@@ -16,6 +16,8 @@ class Space(Hex):
 
     def get_tile(self):
         return self.tile
+    
+OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
 
 class Board:
 
@@ -29,11 +31,19 @@ class Board:
     def insert_tile(self, space : Space, tile : Tile):
         space = self.get_space(space)
         print(space)
-        if space == None or space.tile != None:
+        if space == None or space.tile != None or tile == None:
+            return False, 0
+        if type(tile) is Objective_Tile and self.objective_placement_validation(space) == False:
             return False, 0
         space.tile = tile
         points = self.analyse_placement(space)
         return True, points
+    
+    def objective_placement_validation(self, placement : Hex):
+        for space in OBJECTIVES_SPACES:
+            if placement.equal(space):
+                return True
+        return False
 
     def get_space(self, space : Space):
         key = tuple([space.q, space.r, space.s])

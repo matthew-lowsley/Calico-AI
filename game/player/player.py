@@ -18,6 +18,7 @@ class Player:
         for i in range(len(self.hand)):
             if self.hand[i] == None:
                 self.hand[i] = tile
+                break
     
     def draw_hand(self, win):
         for i in range(len(self.hand)):

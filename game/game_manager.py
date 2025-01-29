@@ -1,3 +1,4 @@
+from game.player.DQL_player.Agent import Agent
 from game.player.random_player import Random_Player
 from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
@@ -35,7 +36,7 @@ class Game_Manager:
 
         self.current_player = 0
         self.boards = [Board(), Board()]
-        self.players = [Random_Player(), Random_Player()]
+        self.players = [Agent(), Agent()]
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
@@ -92,7 +93,7 @@ class Game_Manager:
     def give_starting_hand(self):
 
         for player in self.players:
-            player.hand = [self.bag.take_tile(), self.bag.take_tile()]
+            player.hand = [self.bag.take_tile(), self.bag.take_tile(), None, None]
 
     def draw(self):
         self.win.fill((255, 255, 255))
@@ -128,7 +129,7 @@ class Game_Manager:
 
         winner = 0
         highest_score = 0
-        for i in range(len(self.players)-1, 0, -1):
+        for i in range(len(self.players)-1, -1, -1):
             if self.players[i].points >= highest_score:
                 winner = i
                 highest_score = self.players[i].points
