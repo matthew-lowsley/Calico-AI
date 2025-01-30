@@ -43,3 +43,7 @@ hand_positions = [Vector2(700, 520), Vector2(800, 520), Vector2(700, 620), Vecto
 FPS = 60
 HEX_SIZE = Vector2(50, 50)
 OFFSET = Vector2(200, 50)
+
+MAX_MEMORY = 100_000
+BATCH_SIZE = 1000
+LR = 0.001

@@ -1,10 +1,14 @@
 
 
+from collections import deque
 import copy
 import random
 import numpy as np
 import pygame
-from game.constants import Pattern
+import torch
+
+from game.constants import BATCH_SIZE, LR, MAX_MEMORY, Pattern
+from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.player import Player
 from game.props.board import Board, Space
 from game.props.cat import Almond, Callie, Cira, Coconut, Gwenivere, Leo, Oliver, Rumi, Tecolote, Tibbit
@@ -24,6 +28,14 @@ class Agent(Player):
 
     def __init__(self):
         super().__init__()
+        self.n_games = -1
+        self.epsilon = 0
+        self.gamma = 0.9
+        self.memory = deque(maxlen=MAX_MEMORY)
+        self.net = QNet(1884, 256, 32)
+        self.trainer = QTrainer(self.net, lr=LR, gamma=self.gamma)
+
+        self.turn = 0
         self.objectives_placed = False
         self.taken_spaces = []
         self.available_places = []
@@ -31,6 +43,9 @@ class Agent(Player):
         self.reset()
 
     def reset(self):
+
+        self.n_games += 1
+        self.turn = 0
 
         self.objectives_placed = False
         self.points = 0
@@ -116,8 +131,30 @@ class Agent(Player):
         #print(state)
         #print(len(state))
         return np.array(state)
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def train_long_memory(self):
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(self.memory, BATCH_SIZE)
+        else:
+            mini_sample = self.memory
+        
+        # this loops through the sample of states and trains the model
+        #states, actions , rewards, next_states, dones = zip(*mini_sample)
+        #self.trainer.train_step(states, actions , rewards, next_states, dones)
+
+        # you can also do it like this
+        for state, action, reward, next_state, done in mini_sample:
+            self.trainer.train_step(state, action, reward, next_state, done)
+
+    def train_short_memory(self, state, action, reward, next_state, done):
+        self.trainer.train_step(state, action, reward, next_state, done)
     
     def act(self, board, shop, events):
+
+        self.epsilon = 80 - self.n_games
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
@@ -126,12 +163,20 @@ class Agent(Player):
         state = self.get_state(board, shop, self.hand)
 
         action = self.get_action(state)
-        points = self.perform_action(action, board, shop)
-
-        print(points)
+        done, points = self.perform_action(action, board, shop)
 
         self.points += points
 
+        new_state = self.get_state(board, shop, self.hand)
+
+        self.train_short_memory(state, action, points, new_state, done)
+
+        if done:
+            self.remember(state, action, self.points, new_state, done) 
+            self.train_long_memory()
+        else:
+            self.remember(state, action, points, new_state, done)
+            
         return True
     
     def place(self, board, space, hand_idx):
@@ -193,13 +238,19 @@ class Agent(Player):
         if self.objectives_placed == True:
             self.pick(shop, shop_choice[-1])
 
-        return points
+        done = False
+
+        self.turn += 1
+        if self.turn >= 23:
+            done = True
+
+        return done, points
     
     def get_action(self, state):
 
         final_move = [0]*32
 
-        if True:
+        if random.randint(0, 200) < self.epsilon:
 
             position = [0]*25
             valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
@@ -227,7 +278,9 @@ class Agent(Player):
             final_move = position + hand + pick
 
         else:
-
-            pass
+            state0 = torch.tensor(state, dtype=torch.float)
+            q_values = self.net(state0)
+            move = torch.tensor(q_values)
+            final_move = move.detach().numpy()
 
         return final_move
