@@ -35,8 +35,8 @@ class Game_Manager:
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board(), Board()]
-        self.players = [Agent(), Agent()]
+        self.boards = [Board()]
+        self.players = [Agent()]
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]

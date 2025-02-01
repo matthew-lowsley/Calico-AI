@@ -30,7 +30,7 @@ class Board:
 
     def insert_tile(self, space : Space, tile : Tile):
         space = self.get_space(space)
-        print(space)
+        #print(space)
         if space == None or space.tile != None or tile == None:
             return False, 0
         if type(tile) is Objective_Tile and self.objective_placement_validation(space) == False:
@@ -138,7 +138,7 @@ class Board:
     
     def disable_chain(self, chain, mode="colour"):
 
-        print("running!")
+        #print("running!")
 
         for space in chain:
             if mode == "colour":

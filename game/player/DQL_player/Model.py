@@ -4,16 +4,34 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+from ...constants import DEVICE
+
 class QNet(nn.Module):
 
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+        #self.linear1 = nn.Linear(input_size, hidden_size)
+        #self.linear2 = nn.Linear(hidden_size, output_size)
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(input_size, 942),
+            nn.ReLU(),
+            nn.Linear(942, 471),
+            nn.ReLU(),
+            nn.Linear(471, 235),
+            nn.ReLU(),
+            nn.Linear(235, 117),
+            nn.ReLU(),
+            nn.Linear(117, 58),
+            nn.ReLU(),
+            nn.Linear(58, 32)
+        )
+        # Try multi-head network for action seperation inside net!
+        #self.position = nn.Linear(58, 25)
+        #self.hand = nn.Linear(58, 4)
+        #self.pick = nn.Linear(58, 3)
     
     def forward(self, x):
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+        x = self.linear_relu_stack(x)
         return x
 
 class QTrainer:
@@ -28,10 +46,10 @@ class QTrainer:
     def train_step(self, state, action, reward, next_state, done):
 
         # Convet lists/single values to tensors
-        state = torch.tensor(state, dtype=torch.float)
-        next_state = torch.tensor(next_state, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.float)
-        reward = torch.tensor(reward, dtype=torch.float)
+        state = torch.tensor(state, dtype=torch.float, device=DEVICE)
+        next_state = torch.tensor(next_state, dtype=torch.float, device=DEVICE)
+        action = torch.tensor(action, dtype=torch.float, device=DEVICE)
+        reward = torch.tensor(reward, dtype=torch.float, device=DEVICE)
 
         if len(state.shape) == 1:
             state = torch.unsqueeze(state, 0)

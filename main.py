@@ -1,7 +1,9 @@
 import pygame
 import math
 
-from game.constants import WIDTH, HEIGHT
+import torch
+
+from game.constants import WIDTH, HEIGHT, DEVICE
 from game.game_manager import Game_Manager
 
 

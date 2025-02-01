@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 import torch
 
-from game.constants import BATCH_SIZE, LR, MAX_MEMORY, Pattern
+from game.constants import BATCH_SIZE, LR, MAX_MEMORY, Pattern, DEVICE
 from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.player import Player
 from game.props.board import Board, Space
@@ -33,6 +33,7 @@ class Agent(Player):
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
         self.net = QNet(1884, 256, 32)
+        self.net.to(DEVICE)
         self.trainer = QTrainer(self.net, lr=LR, gamma=self.gamma)
 
         self.turn = 0
@@ -163,7 +164,7 @@ class Agent(Player):
         state = self.get_state(board, shop, self.hand)
 
         action = self.get_action(state)
-        done, points = self.perform_action(action, board, shop)
+        done, points = self.perform_action(action, board, shop, state)
 
         self.points += points
 
@@ -190,13 +191,13 @@ class Agent(Player):
         for i in range(3):
             state = self.get_state(board, shop, self.hand)
             action = self.get_action(state)
-            points = self.perform_action(action, board, shop)
+            points = self.perform_action(action, board, shop, state)
         self.objectives_placed = True
 
     def pick(self, shop, shop_idx):
         self.take_tile(shop.take_tile(index=shop_idx))
 
-    def perform_action(self, action, board, shop):
+    def perform_action(self, action, board, shop, state):
 
         # converts an array (of 32 elements) into a placing and picking actions
         # element 0-24 = position to place
@@ -204,6 +205,7 @@ class Agent(Player):
         # element 30-32 = which tile to pick from the shop
 
         position = np.array(action[:25])
+        #print(position)
         position = position.argsort() # list of indexes in the AVAILBABLE_SPACES sorted by Q-Value.
         #print("Position: "+str(position))
 
@@ -226,11 +228,14 @@ class Agent(Player):
                 if valid:
                     self.taken_spaces[position[i]] = 1
                     break
-                elif j == -4:
-                    j = 0
-                    i -= 1
                 else:
-                    j -= 1
+                    # Give negative reward every time the network makes an invalid move!!!
+                    self.remember(state, action, -10, state, False) 
+                    if j == -4:
+                        j = 0
+                        i -= 1
+                    else:
+                        j -= 1
             except:
                 print("No position is valid for placing!!!")
                 pygame.time.wait(99999)
@@ -278,9 +283,11 @@ class Agent(Player):
             final_move = position + hand + pick
 
         else:
-            state0 = torch.tensor(state, dtype=torch.float)
+            state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
             q_values = self.net(state0)
-            move = torch.tensor(q_values)
-            final_move = move.detach().numpy()
+            #position_q_values, hand_q_values, pick_q_values = self.net(state0)
+            #q_values = torch.cat((position_q_values, hand_q_values, pick_q_values))
+            move = torch.tensor(q_values, device=DEVICE)
+            final_move = move.detach().cpu().numpy()
 
         return final_move

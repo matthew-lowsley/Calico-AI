@@ -1,5 +1,6 @@
 import pygame
 import os
+import torch
 from enum import Enum
 
 from .hex.hex import Vector2
@@ -39,6 +40,8 @@ WIDTH, HEIGHT = 960, 720
 
 hand_positions = [Vector2(700, 520), Vector2(800, 520), Vector2(700, 620), Vector2(800, 620)]
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Hard Device: " + str(DEVICE))
 
 FPS = 60
 HEX_SIZE = Vector2(50, 50)
