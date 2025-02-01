@@ -157,9 +157,6 @@ class Game_Manager:
         if self.turn >= self.final_turn:
             self.draw_end_screen()
             self.restart_game()
-
-            pygame.time.wait(3000)
-
             return True
     
     def read_json(self):

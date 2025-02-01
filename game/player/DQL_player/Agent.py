@@ -146,7 +146,7 @@ class Agent(Player):
         #states, actions , rewards, next_states, dones = zip(*mini_sample)
         #self.trainer.train_step(states, actions , rewards, next_states, dones)
 
-        # you can also do it like this
+        # only doing one at a time at the moment
         for state, action, reward, next_state, done in mini_sample:
             self.trainer.train_step(state, action, reward, next_state, done)
 
@@ -217,28 +217,18 @@ class Agent(Player):
         shop_choice = shop_choice.argsort() # list of indexes in shop sorted by Q-Value.
         #print("Shop: "+str(shop_choice))
 
-        i = -1
-        j = -1
         points = 0
 
-        #print(self.taken_spaces)
-        while True:
-            try:
-                valid, points = self.place(board, AVAILBABLE_SPACES[position[i]], hand[j])
-                if valid:
-                    self.taken_spaces[position[i]] = 1
-                    break
-                else:
-                    # Give negative reward every time the network makes an invalid move!!!
-                    self.remember(state, action, -10, state, False) 
-                    if j == -4:
-                        j = 0
-                        i -= 1
-                    else:
-                        j -= 1
-            except:
-                print("No position is valid for placing!!!")
-                pygame.time.wait(99999)
+        valid, points = self.place(board, AVAILBABLE_SPACES[position[-1]], hand[-1])
+        
+        if valid:
+            self.taken_spaces[position[-1]] = 1
+        else:
+            # Give negative reward every time the network makes an invalid move!!!
+            self.remember(state, action, -10, state, False)
+            self.train_short_memory(state, action, -10, state, False)
+            new_action = self.get_action(state)
+            return self.perform_action(new_action, board, shop, state)
         
         if self.objectives_placed == True:
             self.pick(shop, shop_choice[-1])
