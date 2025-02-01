@@ -133,8 +133,8 @@ class Agent(Player):
         #print(len(state))
         return np.array(state)
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def remember(self, state, action, reward, next_state, done, valid):
+        self.memory.append((state, action, reward, next_state, done, valid))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
@@ -147,11 +147,11 @@ class Agent(Player):
         #self.trainer.train_step(states, actions , rewards, next_states, dones)
 
         # only doing one at a time at the moment
-        for state, action, reward, next_state, done in mini_sample:
-            self.trainer.train_step(state, action, reward, next_state, done)
+        for state, action, reward, next_state, done, valid in mini_sample:
+            self.trainer.train_step(state, action, reward, next_state, done, valid)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+    def train_short_memory(self, state, action, reward, next_state, done, valid):
+        self.trainer.train_step(state, action, reward, next_state, done, valid)
     
     def act(self, board, shop, events):
 
@@ -170,13 +170,13 @@ class Agent(Player):
 
         new_state = self.get_state(board, shop, self.hand)
 
-        self.train_short_memory(state, action, points, new_state, done)
+        self.train_short_memory(state, action, points, new_state, done, True)
 
         if done:
-            self.remember(state, action, self.points, new_state, done) 
+            self.remember(state, action, self.points, new_state, done, True) 
             self.train_long_memory()
         else:
-            self.remember(state, action, points, new_state, done)
+            self.remember(state, action, points, new_state, done, True)
             
         return True
     
@@ -225,8 +225,8 @@ class Agent(Player):
             self.taken_spaces[position[-1]] = 1
         else:
             # Give negative reward every time the network makes an invalid move!!!
-            self.remember(state, action, -10, state, False)
-            self.train_short_memory(state, action, -10, state, False)
+            self.remember(state, action, -10, state, False, False)
+            self.train_short_memory(state, action, -10, state, False, False)
             new_action = self.get_action(state)
             return self.perform_action(new_action, board, shop, state)
         

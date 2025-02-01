@@ -43,7 +43,7 @@ class QTrainer:
         self.optimizer = optim.Adam(net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
 
-    def train_step(self, state, action, reward, next_state, done):
+    def train_step(self, state, action, reward, next_state, done, valid):
 
         # Convet lists/single values to tensors
         state = torch.tensor(state, dtype=torch.float, device=DEVICE)
@@ -57,12 +57,16 @@ class QTrainer:
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
+            valid = (valid, )
 
         pred = self.net(state)
 
         target = pred.clone()
         for idx in range(len(done)):
-            if not done[idx]:
+            print(valid[idx])
+            if not valid[idx]:
+                Q_new = -float('inf')
+            elif not done[idx]:
                 Q_new = reward[idx] + self.gamma * torch.max(self.net(next_state[idx]))
             else:
                 Q_new = reward[idx]

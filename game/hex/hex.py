@@ -43,7 +43,7 @@ class Hex:
         neighbors = []
         for direction in Direction:
             neighbors.append(self.get_neighbor(direction))
-        print(neighbors)
+        #print(neighbors)
         return neighbors
 
     def __repr__(self) -> str:

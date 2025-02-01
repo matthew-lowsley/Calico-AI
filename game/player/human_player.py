@@ -47,7 +47,7 @@ class Human_Player(Player):
             self.points += points
             self.remove_from_hand()
             self.last_placed = space
-            print(self.points)
+            #print(self.points)
         else:
             self.selected = None
     
