@@ -1,5 +1,6 @@
 from game.player.DQL_player.Agent import Agent
 from game.player.random_player import Random_Player
+from game.player.score_plotter import Plotter
 from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
@@ -37,6 +38,7 @@ class Game_Manager:
         self.current_player = 0
         self.boards = [Board()]
         self.players = [Agent()]
+        self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
@@ -46,6 +48,8 @@ class Game_Manager:
         self.final_turn = len(self.players) * 23
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
+
+        self.plotter = Plotter(len(self.players))
 
         self.restart_game()
 
@@ -135,6 +139,11 @@ class Game_Manager:
                 highest_score = self.players[i].points
         
         return winner, highest_score
+    
+    def calculate_scores(self):
+
+        for i in range(len(self.players)):
+            self.scores[i].append(self.players[i].points)
 
     def next_turn(self):
         self.turn += 1
@@ -155,8 +164,9 @@ class Game_Manager:
             self.next_turn()
 
         if self.turn >= self.final_turn:
+            self.calculate_scores()
             self.draw_end_screen()
-            self.restart_game()
+            #self.restart_game()
             return True
     
     def read_json(self):

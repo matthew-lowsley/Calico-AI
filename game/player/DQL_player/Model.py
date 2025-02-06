@@ -63,7 +63,6 @@ class QTrainer:
 
         target = pred.clone()
         for idx in range(len(done)):
-            print(valid[idx])
             if not valid[idx]:
                 Q_new = -float('inf')
             elif not done[idx]:

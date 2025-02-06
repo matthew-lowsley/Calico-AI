@@ -155,7 +155,7 @@ class Agent(Player):
     
     def act(self, board, shop, events):
 
-        self.epsilon = 80 - self.n_games
+        self.epsilon = 1000 - self.n_games
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
@@ -163,7 +163,7 @@ class Agent(Player):
         
         state = self.get_state(board, shop, self.hand)
 
-        action = self.get_action(state)
+        action = self.get_action(state, random.randint(0, 2000) < self.epsilon)
         done, points = self.perform_action(action, board, shop, state)
 
         self.points += points
@@ -173,7 +173,7 @@ class Agent(Player):
         self.train_short_memory(state, action, points, new_state, done, True)
 
         if done:
-            self.remember(state, action, self.points, new_state, done, True) 
+            self.remember(state, action, self.points * 2, new_state, done, True) 
             self.train_long_memory()
         else:
             self.remember(state, action, points, new_state, done, True)
@@ -197,7 +197,7 @@ class Agent(Player):
     def pick(self, shop, shop_idx):
         self.take_tile(shop.take_tile(index=shop_idx))
 
-    def perform_action(self, action, board, shop, state):
+    def perform_action(self, action, board, shop, state, i=0):
 
         # converts an array (of 32 elements) into a placing and picking actions
         # element 0-24 = position to place
@@ -227,8 +227,13 @@ class Agent(Player):
             # Give negative reward every time the network makes an invalid move!!!
             self.remember(state, action, -10, state, False, False)
             self.train_short_memory(state, action, -10, state, False, False)
-            new_action = self.get_action(state)
-            return self.perform_action(new_action, board, shop, state)
+            if i >= 800:
+                new_action = self.get_action(state, True)
+            else:
+                new_action = self.get_action(state, random.randint(0, 2000) < self.epsilon)
+            i += 1
+            print(i)
+            return self.perform_action(new_action, board, shop, state, i)
         
         if self.objectives_placed == True:
             self.pick(shop, shop_choice[-1])
@@ -241,11 +246,11 @@ class Agent(Player):
 
         return done, points
     
-    def get_action(self, state):
+    def get_action(self, state, explore=False):
 
         final_move = [0]*32
 
-        if random.randint(0, 200) < self.epsilon:
+        if explore:
 
             position = [0]*25
             valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]

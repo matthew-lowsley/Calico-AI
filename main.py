@@ -16,6 +16,7 @@ def main():
     running = True
     clock = pygame.time.Clock()
     game = Game_Manager(WIN)
+    n_games = 0
     
     while running:
 
@@ -27,7 +28,13 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        game.step(events)
+        if game.step(events):
+
+            n_games += 1
+
+            game.plotter.plot(game.scores, n_games)
+
+            game.restart_game()
     
     pygame.QUIT()
     quit()
