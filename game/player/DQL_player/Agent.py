@@ -28,8 +28,9 @@ class Agent(Player):
 
     def __init__(self):
         super().__init__()
-        self.n_games = -1
-        self.epsilon = 0
+        self.n_games = 0
+        self.epsilon = 1
+        self.explore_chance = 0.4
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
         self.net = QNet(1884, 256, 32)
@@ -47,7 +48,6 @@ class Agent(Player):
 
         self.n_games += 1
         self.turn = 0
-
         self.objectives_placed = False
         self.points = 0
         self.hand = []
@@ -155,7 +155,7 @@ class Agent(Player):
     
     def act(self, board, shop, events):
 
-        self.epsilon = 1000 - self.n_games
+        epsilon = self.epsilon - (self.n_games / 10000)
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
@@ -163,7 +163,7 @@ class Agent(Player):
         
         state = self.get_state(board, shop, self.hand)
 
-        action = self.get_action(state, random.randint(0, 2000) < self.epsilon)
+        action = self.get_action(state, random.random() < epsilon - 0.6)
         done, points = self.perform_action(action, board, shop, state)
 
         self.points += points
@@ -175,6 +175,9 @@ class Agent(Player):
         if done:
             self.remember(state, action, self.points * 2, new_state, done, True) 
             self.train_long_memory()
+            print(f'Long Training! Epsilon: {epsilon}')
+            if self.n_games % 50 == 0:
+                self.net.save()
         else:
             self.remember(state, action, points, new_state, done, True)
             
@@ -188,16 +191,17 @@ class Agent(Player):
         return valid, points
     
     def place_objectives(self, board, shop):
+        epsilon = self.epsilon - (self.n_games / 1000)
         for i in range(3):
             state = self.get_state(board, shop, self.hand)
-            action = self.get_action(state)
+            action = self.get_action(state, random.random() < epsilon - 0.6)
             points = self.perform_action(action, board, shop, state)
         self.objectives_placed = True
 
     def pick(self, shop, shop_idx):
         self.take_tile(shop.take_tile(index=shop_idx))
 
-    def perform_action(self, action, board, shop, state, i=0):
+    def perform_action(self, action, board, shop, state):
 
         # converts an array (of 32 elements) into a placing and picking actions
         # element 0-24 = position to place
@@ -218,30 +222,40 @@ class Agent(Player):
         #print("Shop: "+str(shop_choice))
 
         points = 0
+        i = -1
+        j = -1
 
-        valid, points = self.place(board, AVAILBABLE_SPACES[position[-1]], hand[-1])
-        
-        if valid:
-            self.taken_spaces[position[-1]] = 1
-        else:
-            # Give negative reward every time the network makes an invalid move!!!
-            self.remember(state, action, -10, state, False, False)
-            self.train_short_memory(state, action, -10, state, False, False)
-            if i >= 800:
-                new_action = self.get_action(state, True)
-            else:
-                new_action = self.get_action(state, random.randint(0, 2000) < self.epsilon)
-            i += 1
-            print(i)
-            return self.perform_action(new_action, board, shop, state, i)
-        
+        while True:
+            try:
+                valid, points = self.place(board, AVAILBABLE_SPACES[position[i]], hand[j])
+                if valid:
+                    #print("Valid!")
+                    self.taken_spaces[position[i]] = 1
+                    break
+                else:
+                    #print("Invalid!")
+                    self.remember(state, action, -10, state, False, False)
+                    if i > -25:
+                        i -= 1
+                    elif i == -25:
+                        i = -1
+                        j -= 1
+                    elif j == -4:
+                        new_action = self.get_action(state, True)
+                        return self.perform_action(new_action, board, shop, state)
+                    else:
+                        i -= 1
+            except:
+                print("No position is valid for placing!!!")
+                pygame.time.wait(99999)
+
         if self.objectives_placed == True:
             self.pick(shop, shop_choice[-1])
 
         done = False
 
         self.turn += 1
-        if self.turn >= 23:
+        if self.turn >= 25:
             done = True
 
         return done, points
@@ -251,7 +265,7 @@ class Agent(Player):
         final_move = [0]*32
 
         if explore:
-
+            print("Random Move!")
             position = [0]*25
             valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
             if self.objectives_placed == False:
@@ -278,6 +292,7 @@ class Agent(Player):
             final_move = position + hand + pick
 
         else:
+            print("Net Move!")
             state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
             q_values = self.net(state0)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
