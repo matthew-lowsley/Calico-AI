@@ -7,20 +7,16 @@ from game.constants import WIDTH, HEIGHT, DEVICE
 from game.game_manager import Game_Manager
 
 
-FPS = 60
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('Calico')
 
 def main():
 
     running = True
-    clock = pygame.time.Clock()
     game = Game_Manager(WIN)
     n_games = 0
     
     while running:
-
-        clock.tick(FPS)
 
         events = pygame.event.get()
 

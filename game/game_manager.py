@@ -53,6 +53,7 @@ class Game_Manager:
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
         self.plotter = Plotter(len(self.players))
+        self.disable_graphics = True
 
         self.restart_game()
 
@@ -156,10 +157,10 @@ class Game_Manager:
 
         self.current_player = self.turn % len(self.players)
 
-        self.draw()
+        if not self.disable_graphics: self.draw()
 
         if self.players[self.current_player].act(self.boards[self.current_player], self.shop, events):
-            self.draw()
+            if not self.disable_graphics: self.draw()
 
             if self.turn == len(self.players)-1:
                 self.give_starting_hand()
@@ -168,7 +169,7 @@ class Game_Manager:
 
         if self.turn >= self.final_turn:
             self.calculate_scores()
-            self.draw_end_screen()
+            if not self.disable_graphics: self.draw_end_screen()
             #self.restart_game()
             return True
     
