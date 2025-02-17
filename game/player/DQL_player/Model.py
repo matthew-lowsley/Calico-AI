@@ -51,7 +51,7 @@ class QTrainer:
         self.target.load_state_dict(self.net.state_dict())
         self.target.eval()
 
-    def train_step(self, state, action, reward, next_state, done, valid):
+    def train_step(self, state, action, reward, next_state, done):
 
         # Convet lists/single values to tensors
         state = torch.tensor(state, dtype=torch.float, device=DEVICE)
@@ -65,15 +65,12 @@ class QTrainer:
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
-            valid = (valid, )
 
         pred = self.net(state)
         #print(pred)
         target = pred.clone()
         for idx in range(len(done)):
-            if not valid[idx]:
-                Q_new = -float('inf')
-            elif not done[idx]:
+            if not done[idx]:
                 Q_new = reward[idx] + self.gamma * torch.max(self.target(next_state[idx]))
             else:
                 Q_new = reward[idx]

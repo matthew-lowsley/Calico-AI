@@ -90,8 +90,8 @@ class Agent(Player):
         #print(len(state))
         return np.array(state)
 
-    def remember(self, state, action, reward, next_state, done, valid):
-        self.memory.append((state, action, reward, next_state, done, valid))
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
@@ -104,11 +104,11 @@ class Agent(Player):
         #self.trainer.train_step(states, actions , rewards, next_states, dones)
 
         # only doing one at a time at the moment
-        for state, action, reward, next_state, done, valid in mini_sample:
-            self.trainer.train_step(state, action, reward, next_state, done, valid)
+        for state, action, reward, next_state, done in mini_sample:
+            self.trainer.train_step(state, action, reward, next_state, done)
 
-    def train_short_memory(self, state, action, reward, next_state, done, valid):
-        self.trainer.train_step(state, action, reward, next_state, done, valid)
+    def train_short_memory(self, state, action, reward, next_state, done):
+        self.trainer.train_step(state, action, reward, next_state, done)
     
     def act(self, board, shop, events):
 
@@ -121,16 +121,18 @@ class Agent(Player):
         state = self.get_state(board)
 
         action = self.get_action(state, random.random() < epsilon)
+        action = self.action_mask(action)
         done, points = self.perform_action(action, shop, board, state)
 
         self.points += points
 
         new_state = self.get_state(board)
 
-        self.train_short_memory(state, action, points, new_state, done, True)
+        self.train_short_memory(state, action, points, new_state, done)
+        self.remember(state, action, points, new_state, done)
 
         if done:
-            self.remember(state, action, points, new_state, done, True) 
+            self.remember(state, action, points, new_state, done) 
             self.train_long_memory()
             print(f'Long Training! Epsilon: {epsilon}')
             if self.n_games % 20 == 0:
@@ -138,10 +140,15 @@ class Agent(Player):
                 self.trainer.update_target_net()
             if self.n_games % 50 == 0:
                 self.net.save()
-        else:
-            self.remember(state, action, points, new_state, done, True)
             
         return True
+
+    def action_mask(self, action):
+        for i in range(len(self.taken_spaces)):
+            if self.taken_spaces[i] == 1:
+                action[i] = -float('inf')
+                action[i+22] = -float('inf')
+        return action
     
     def place(self, board, space, hand_idx):
         valid, points = board.insert_tile(space, self.hand[hand_idx])
@@ -160,38 +167,24 @@ class Agent(Player):
 
     def perform_action(self, action, shop, board, state):
 
-        # converts an array (of 32 elements) into a placing and picking actions
-        # element 0-24 = position to place
-        # element 25-29 = which tile in hand to place
-        # element 30-32 = which tile to pick from the shop
+        # converts an array (of 32 elements) into a placing action
+        # elements 0-21 = placing left hand tile in one of the 22 spaces
+        # elements 22-43 = placing right hand tile in one of the 22 spaces
 
         action = np.array(action).argsort()
 
         points = 0
         i = -1
 
-        while True:
-            try:
-                j = 0
-                if action [i] > 21:
-                    j = 1
-                #print(action[i]-(j*22))
-                valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
-                if valid:
-                    #print("Valid!")
-                    self.taken_spaces[action[i]-(j*22)] = 1
-                    break
-                else:
-                    #print("Invalid!")
-                    self.remember(state, action, -10, state, False, False)
-                    if i > -44:
-                        i -= 1
-                    else:
-                        new_action = self.get_action(state, True)
-                        return self.perform_action(new_action, board, state)
-            except Exception as error:
-                print(error)
-                exit()
+        j = 0
+        if action[i] > 21:
+            j = 1
+        
+        valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
+        if not valid:
+            print("selected invalid action!!! Bad news bears!")
+            exit()
+        self.taken_spaces[action[i]-(j*22)] = 1
 
         if self.objectives_placed == True:
             self.pick(shop, random.randint(0,2))
