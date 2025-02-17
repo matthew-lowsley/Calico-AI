@@ -13,21 +13,24 @@ import pygame
 import json
 
 
-objective_tiles = np.array([Objective_Tile(Objective.AAAABB), Objective_Tile(Objective.AAABBB), 
-                            Objective_Tile(Objective.AAABBC), Objective_Tile(Objective.AABBCC),
-                            Objective_Tile(Objective.AABBCD), Objective_Tile(Objective.ABCDEF)])
+# objective_tiles = np.array([Objective_Tile(Objective.AAAABB), Objective_Tile(Objective.AAABBB), 
+#                             Objective_Tile(Objective.AAABBC), Objective_Tile(Objective.AABBCC),
+#                             Objective_Tile(Objective.AABBCD), Objective_Tile(Objective.ABCDEF)])
+objective_tiles = np.array([Objective_Tile(Objective.AABBCC), Objective_Tile(Objective.AABBCD), 
+                            Objective_Tile(Objective.AAABBC), Objective_Tile(Objective.AAAABB),
+                            Objective_Tile(Objective.AAABBB), Objective_Tile(Objective.ABCDEF)])
 
 lv1_cats = [Oliver, Callie, Tibbit, Rumi]
 lv2_cats = [Coconut, Tecolote, Cira, Almond]
 lv3_cats = [Gwenivere, Leo]
 
 starting_cats = {
-    'SPOTS': Rumi(Pattern.SPOTS),
-    'CHURCHES': Rumi(Pattern.CHURCHES),
-    'FLOWERS': Tecolote(Pattern.FLOWERS),
-    'STRIPES': Tecolote(Pattern.STRIPES),
-    'VINES': Leo(Pattern.VINES),
-    'FERNS': Leo(Pattern.FERNS)
+    'SPOTS': Oliver(Pattern.SPOTS),
+    'CHURCHES': Oliver(Pattern.CHURCHES),
+    'FLOWERS': Coconut(Pattern.FLOWERS),
+    'STRIPES': Coconut(Pattern.STRIPES),
+    'VINES': Gwenivere(Pattern.VINES),
+    'FERNS': Gwenivere(Pattern.FERNS)
 }
 
 class Game_Manager:
@@ -36,8 +39,8 @@ class Game_Manager:
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board()]
-        self.players = [Agent()]
+        self.boards = [Board(), Board()]
+        self.players = [Agent(), Random_Player()]
         self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
@@ -61,18 +64,18 @@ class Game_Manager:
         self.shop.stock_shop()
 
         #CHANGE THIS TO HAVE RANDOM CATS AGAIN
-        self.cats = self.configure_cats()
-        #self.cats = starting_cats
+        #self.cats = self.configure_cats()
+        self.cats = starting_cats
 
         boards = self.read_json()
-        board_colours = np.array(['blue', 'green', 'yellow', 'purple'])
+        board_colours = np.array(['blue', 'blue', 'yellow', 'purple'])
 
         for player in self.players:
-            np.random.shuffle(objective_tiles)
+            #np.random.shuffle(objective_tiles)
             player.reset()
             player.hand = copy.deepcopy(objective_tiles[:4])
 
-        np.random.shuffle(board_colours)
+        #np.random.shuffle(board_colours)
         for i, board in enumerate(self.boards):
             board.create_board()
             board.create_perimeter(boards['boards'][board_colours[i]])

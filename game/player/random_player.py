@@ -23,10 +23,12 @@ class Random_Player(Player):
         self.placed = False
 
     def place_objectives(self, board):
-        hand_idx = np.array([0,1,2,3])
-        np.random.shuffle(hand_idx)
-        for i, space in enumerate(OBJECTIVES_SPACES):
-            valid, points = board.insert_tile(space, self.hand[hand_idx[i]])
+        #hand_idx = np.array([0,1,2,3])
+        #np.random.shuffle(hand_idx)
+        #for i, space in enumerate(OBJECTIVES_SPACES):
+        #    valid, points = board.insert_tile(space, self.hand[hand_idx[i]])
+        for i in range(3):
+            valid, points = board.insert_tile(OBJECTIVES_SPACES[i], self.hand[i])
         self.objectives_placed = True
 
     def place(self, board):

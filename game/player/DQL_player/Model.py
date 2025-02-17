@@ -8,22 +8,18 @@ from ...constants import DEVICE
 
 class QNet(nn.Module):
 
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, output_size):
         super().__init__()
         #self.linear1 = nn.Linear(input_size, hidden_size)
         #self.linear2 = nn.Linear(hidden_size, output_size)
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(input_size, 942),
+            nn.Linear(input_size, input_size),
             nn.ReLU(),
-            nn.Linear(942, 471),
+            nn.Linear(input_size, 864),
             nn.ReLU(),
-            nn.Linear(471, 235),
+            nn.Linear(864, 432),
             nn.ReLU(),
-            nn.Linear(235, 117),
-            nn.ReLU(),
-            nn.Linear(117, 58),
-            nn.ReLU(),
-            nn.Linear(58, 32)
+            nn.Linear(432, output_size)
         )
         # Try multi-head network for action seperation inside net!
         #self.position = nn.Linear(58, 25)
@@ -44,12 +40,16 @@ class QNet(nn.Module):
 
 class QTrainer:
 
-    def __init__(self, net, lr, gamma):
+    def __init__(self, net, target_net, lr, gamma):
         self.lr = lr
         self.gamma = gamma
         self.net = net
+        self.target = target_net
         self.optimizer = optim.Adam(net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
+
+        self.target.load_state_dict(self.net.state_dict())
+        self.target.eval()
 
     def train_step(self, state, action, reward, next_state, done, valid):
 
@@ -68,13 +68,13 @@ class QTrainer:
             valid = (valid, )
 
         pred = self.net(state)
-
+        #print(pred)
         target = pred.clone()
         for idx in range(len(done)):
             if not valid[idx]:
                 Q_new = -float('inf')
             elif not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.net(next_state[idx]))
+                Q_new = reward[idx] + self.gamma * torch.max(self.target(next_state[idx]))
             else:
                 Q_new = reward[idx]
 
@@ -85,3 +85,6 @@ class QTrainer:
         loss.backward()
 
         self.optimizer.step()
+
+    def update_target_net(self):
+        self.target.load_state_dict(self.net.state_dict())

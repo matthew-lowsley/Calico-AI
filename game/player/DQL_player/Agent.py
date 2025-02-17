@@ -17,10 +17,10 @@ from game.props.tile import Shop
 OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
 
 AVAILBABLE_SPACES = [Space(1,1,-2), Space(2,1,-3), Space(3,1,-4), Space(4,1,-5),
-                     Space(5,1,-6), Space(0,2,-2), Space(1,2,-3), Space(2, 2, -4),
+                     Space(5,1,-6), Space(0,2,-2), Space(1,2,-3),
                      Space(3,2,-5), Space(4,2,-6), Space(0,3,-3), Space(1,3,-4),
-                     Space(2,3,-5), Space(3, 3, -6), Space(4,3,-7), Space(-1,4,-3),
-                     Space(0, 4, -4), Space(1,4,-5), Space(2,4,-6), Space(3,4,-7),
+                     Space(2,3,-5), Space(4,3,-7), Space(-1,4,-3),
+                     Space(1,4,-5), Space(2,4,-6), Space(3,4,-7),
                      Space(-1,5,-4), Space(0,5,-5), Space(1,5,-6), Space(2,5,-7),
                      Space(3,5,-8)]
 
@@ -29,13 +29,15 @@ class Agent(Player):
     def __init__(self):
         super().__init__()
         self.n_games = 0
-        self.epsilon = 1
-        self.explore_chance = 0.4
+        self.epsilon = 0.6
+        self.epsilon_decay = 0.0001
         self.gamma = 0.9
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.net = QNet(1884, 256, 32)
+        self.net = QNet(1728, 44)
+        self.target_net = QNet(1728, 44)
         self.net.to(DEVICE)
-        self.trainer = QTrainer(self.net, lr=LR, gamma=self.gamma)
+        self.target_net.to(DEVICE)
+        self.trainer = QTrainer(self.net, self.target_net, lr=LR, gamma=self.gamma)
 
         self.turn = 0
         self.objectives_placed = False
@@ -51,60 +53,26 @@ class Agent(Player):
         self.objectives_placed = False
         self.points = 0
         self.hand = []
-        self.taken_spaces = [0]*25
+        self.taken_spaces = [0]*22
         self.available_places = copy.deepcopy(AVAILBABLE_SPACES)
     
-    def get_state(self, board : Board, shop : Shop, hand):
+    def get_state(self, board : Board):
         objectives_spaces = [tuple([0, 4, -4]), tuple([2, 2, -4]), tuple([3, 3, -6])]
         board_state = []
         for key in board.board.keys():
             space = board.board[key]
             space_state = []
             if key in objectives_spaces:
-                space_state += [0]*6
+                pass
             else:
                 space_state += [0]*36
-            if space.tile != None:
-                colour = 0
-                pattern = space.tile.pattern.value
-                if len(space_state) == 36:
-                    colour = space.tile.colour.value
-                space_state[(colour*6)+pattern] = 1
-            board_state += space_state
-        
-        shop_state = []
-        for tile in shop.tiles:
-            tile_state = [0]*36
-            colour = tile.colour.value
-            pattern = tile.pattern.value
-            tile_state[(colour*6)+pattern] = 1
-            shop_state += tile_state
-
-        cat_state = [0]*6
-        for pattern in Pattern:
-            cat = board.cats[pattern.name]
-            #print(type(cat))
-            match type(cat).__qualname__:
-                case Oliver.__qualname__:
-                    cat_state[pattern.value] = 1
-                case Callie.__qualname__:
-                    cat_state[pattern.value] = 2
-                case Tibbit.__qualname__:
-                    cat_state[pattern.value] = 3
-                case Rumi.__qualname__:
-                    cat_state[pattern.value] = 4
-                case Coconut.__qualname__:
-                    cat_state[pattern.value] = 5
-                case Tecolote.__qualname__:
-                    cat_state[pattern.value] = 6
-                case Cira.__qualname__:
-                    cat_state[pattern.value] = 7
-                case Almond.__qualname__:
-                    cat_state[pattern.value] = 8
-                case Gwenivere.__qualname__:
-                    cat_state[pattern.value] = 9
-                case Leo.__qualname__:
-                    cat_state[pattern.value] = 10
+                if space.tile != None:
+                    colour = 0
+                    pattern = space.tile.pattern.value
+                    if len(space_state) == 36:
+                        colour = space.tile.colour.value
+                    space_state[(colour*6)+pattern] = 1
+                board_state += space_state
 
         regular_hand_state = []
         if self.objectives_placed == False:
@@ -116,19 +84,8 @@ class Agent(Player):
                 pattern = self.hand[i].pattern.value
                 tile_state[(colour*6)+pattern] = 1
                 regular_hand_state += tile_state
-        
-        starting_hand_state = []
-        if self.objectives_placed == True:
-            starting_hand_state = [0]*24
-        else:
-            for tile in hand:
-                tile_state = [0]*6
-                if tile != None:
-                    pattern = tile.pattern.value
-                    tile_state[pattern] = 1
-                starting_hand_state += tile_state
-
-        state = board_state + shop_state + cat_state + regular_hand_state + starting_hand_state
+    
+        state = board_state + regular_hand_state
         #print(state)
         #print(len(state))
         return np.array(state)
@@ -155,27 +112,30 @@ class Agent(Player):
     
     def act(self, board, shop, events):
 
-        epsilon = self.epsilon - (self.n_games / 10000)
+        epsilon = self.epsilon - (self.n_games * self.epsilon_decay)
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
             return True
         
-        state = self.get_state(board, shop, self.hand)
+        state = self.get_state(board)
 
-        action = self.get_action(state, random.random() < epsilon - 0.6)
-        done, points = self.perform_action(action, board, shop, state)
+        action = self.get_action(state, random.random() < epsilon)
+        done, points = self.perform_action(action, shop, board, state)
 
         self.points += points
 
-        new_state = self.get_state(board, shop, self.hand)
+        new_state = self.get_state(board)
 
         self.train_short_memory(state, action, points, new_state, done, True)
 
         if done:
-            self.remember(state, action, self.points * 2, new_state, done, True) 
+            self.remember(state, action, points, new_state, done, True) 
             self.train_long_memory()
             print(f'Long Training! Epsilon: {epsilon}')
+            if self.n_games % 20 == 0:
+                print('Updating Target Net!')
+                self.trainer.update_target_net()
             if self.n_games % 50 == 0:
                 self.net.save()
         else:
@@ -191,71 +151,55 @@ class Agent(Player):
         return valid, points
     
     def place_objectives(self, board, shop):
-        epsilon = self.epsilon - (self.n_games / 1000)
         for i in range(3):
-            state = self.get_state(board, shop, self.hand)
-            action = self.get_action(state, random.random() < epsilon - 0.6)
-            points = self.perform_action(action, board, shop, state)
+            valid, points = board.insert_tile(OBJECTIVES_SPACES[i], self.hand[i])
         self.objectives_placed = True
 
     def pick(self, shop, shop_idx):
         self.take_tile(shop.take_tile(index=shop_idx))
 
-    def perform_action(self, action, board, shop, state):
+    def perform_action(self, action, shop, board, state):
 
         # converts an array (of 32 elements) into a placing and picking actions
         # element 0-24 = position to place
         # element 25-29 = which tile in hand to place
         # element 30-32 = which tile to pick from the shop
 
-        position = np.array(action[:25])
-        #print(position)
-        position = position.argsort() # list of indexes in the AVAILBABLE_SPACES sorted by Q-Value.
-        #print("Position: "+str(position))
-
-        hand = np.array(action[25:29])
-        hand = hand.argsort() # list of indexes in hand sorted by Q-Value.
-        #print("Hand: "+str(hand))
-
-        shop_choice = np.array(action[29:])
-        shop_choice = shop_choice.argsort() # list of indexes in shop sorted by Q-Value.
-        #print("Shop: "+str(shop_choice))
+        action = np.array(action).argsort()
 
         points = 0
         i = -1
-        j = -1
 
         while True:
             try:
-                valid, points = self.place(board, AVAILBABLE_SPACES[position[i]], hand[j])
+                j = 0
+                if action [i] > 21:
+                    j = 1
+                #print(action[i]-(j*22))
+                valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
                 if valid:
                     #print("Valid!")
-                    self.taken_spaces[position[i]] = 1
+                    self.taken_spaces[action[i]-(j*22)] = 1
                     break
                 else:
                     #print("Invalid!")
                     self.remember(state, action, -10, state, False, False)
-                    if i > -25:
+                    if i > -44:
                         i -= 1
-                    elif i == -25:
-                        i = -1
-                        j -= 1
-                    elif j == -4:
-                        new_action = self.get_action(state, True)
-                        return self.perform_action(new_action, board, shop, state)
                     else:
-                        i -= 1
-            except:
-                print("No position is valid for placing!!!")
-                pygame.time.wait(99999)
+                        new_action = self.get_action(state, True)
+                        return self.perform_action(new_action, board, state)
+            except Exception as error:
+                print(error)
+                exit()
 
         if self.objectives_placed == True:
-            self.pick(shop, shop_choice[-1])
+            self.pick(shop, random.randint(0,2))
 
         done = False
 
         self.turn += 1
-        if self.turn >= 25:
+        if self.turn >= 22:
             done = True
 
         return done, points
@@ -266,31 +210,13 @@ class Agent(Player):
 
         if explore:
             print("Random Move!")
-            position = [0]*25
+            position = [0]*44
             valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
-            if self.objectives_placed == False:
-                 if self.taken_spaces[7] == 0:
-                     valid_spaces[0] = 7
-                 elif self.taken_spaces[13] == 0:
-                     valid_spaces[0] = 13
-                 elif self.taken_spaces[16] == 0:
-                     valid_spaces[0] = 16
-            else:
-                random.shuffle(valid_spaces)
-            position[valid_spaces[0]] = 1
+            tile_selection = random.randint(0, 1)
+            random.shuffle(valid_spaces)
+            position[valid_spaces[0]+(21*tile_selection)] = 1
 
-            hand = [0]*4
-            if self.objectives_placed == False:
-                hand[random.randint(0,3)] = 1
-            else:
-                hand[random.randint(0,1)] = 1
-
-            pick = [0]*3
-            if self.objectives_placed:
-                pick[random.randint(0,2)] = 1
-
-            final_move = position + hand + pick
-
+            final_move = position
         else:
             print("Net Move!")
             state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
@@ -300,4 +226,5 @@ class Agent(Player):
             move = torch.tensor(q_values, device=DEVICE)
             final_move = move.detach().cpu().numpy()
 
+        #print(len(final_move))
         return final_move
