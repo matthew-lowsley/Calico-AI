@@ -1,3 +1,4 @@
+from collections import namedtuple
 import pygame
 import os
 import torch
@@ -35,6 +36,7 @@ class Objective(Enum):
     AABBCD = 4
     ABCDEF = 5
 
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
 WIDTH, HEIGHT = 960, 720
 

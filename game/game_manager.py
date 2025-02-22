@@ -52,7 +52,7 @@ class Game_Manager:
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
-        self.plotter = Plotter(len(self.players))
+        self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores")
         self.disable_graphics = True
 
         self.restart_game()

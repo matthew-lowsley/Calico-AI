@@ -3,8 +3,11 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+import csv
+import numpy as np
 
 from ...constants import DEVICE
+from ..score_plotter import Plotter
 
 class QNet(nn.Module):
 
@@ -51,6 +54,9 @@ class QTrainer:
         self.target.load_state_dict(self.net.state_dict())
         self.target.eval()
 
+        self.plotter = Plotter(1, "Games", "Max Q", "Max Q Value per Game")
+        self.max_q_average = []
+
     def train_step(self, state, action, reward, next_state, done):
 
         # Convet lists/single values to tensors
@@ -75,7 +81,9 @@ class QTrainer:
             else:
                 Q_new = reward[idx]
 
-            target[idx][torch.argmax(action).item()] = Q_new
+            target[idx][torch.argmax(action[idx]).item()] = Q_new
+            #print(Q_new)
+            #self.max_q_current.append(float(Q_new))
 
         self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
@@ -85,3 +93,29 @@ class QTrainer:
 
     def update_target_net(self):
         self.target.load_state_dict(self.net.state_dict())
+    
+    def validate_and_plot(self):
+
+        states = []
+
+        with open('transitions.csv', mode='r') as file:
+            transitions_file = csv.reader(file)
+            next(transitions_file, None) # Skip header
+            for lines in transitions_file:
+                #print(lines[0])
+                # state = []
+                # for position in lines[0]:
+                #     state.append(int(position))
+                states.append(eval(lines[0]))
+        
+        max_q_current = []
+
+        for state in states:
+            state = torch.tensor(state, dtype=torch.float, device=DEVICE)
+            pred = self.net(state)
+            max_q_current.append(torch.max(pred).detach().cpu().numpy())
+
+        self.max_q_average.append(sum(max_q_current)/len(states))
+
+        self.plotter.plot_Q(self.max_q_average)
+

@@ -28,7 +28,7 @@ def main():
 
             n_games += 1
 
-            game.plotter.plot(game.scores, n_games)
+            game.plotter.plot_scores(game.scores, n_games)
 
             game.restart_game()
     

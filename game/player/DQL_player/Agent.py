@@ -8,6 +8,7 @@ import pygame
 import torch
 
 from game.constants import BATCH_SIZE, LR, MAX_MEMORY, Pattern, DEVICE
+from game.player.DQL_player.Memory import Memory
 from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.player import Player
 from game.props.board import Board, Space
@@ -32,7 +33,7 @@ class Agent(Player):
         self.epsilon = 0.6
         self.epsilon_decay = 0.0001
         self.gamma = 0.9
-        self.memory = deque(maxlen=MAX_MEMORY)
+        self.memory = Memory()
         self.net = QNet(1728, 44)
         self.target_net = QNet(1728, 44)
         self.net.to(DEVICE)
@@ -94,18 +95,20 @@ class Agent(Player):
         self.memory.append((state, action, reward, next_state, done))
 
     def train_long_memory(self):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE)
-        else:
-            mini_sample = self.memory
+        # if len(self.memory) > BATCH_SIZE:
+        #     mini_sample = random.sample(self.memory, BATCH_SIZE)
+        # else:
+        #     mini_sample = self.memory
+
+        mini_sample = self.memory.sample(BATCH_SIZE)
         
         # this loops through the sample of states and trains the model
-        #states, actions , rewards, next_states, dones = zip(*mini_sample)
-        #self.trainer.train_step(states, actions , rewards, next_states, dones)
+        states, actions , rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions , rewards, next_states, dones)
 
         # only doing one at a time at the moment
-        for state, action, reward, next_state, done in mini_sample:
-            self.trainer.train_step(state, action, reward, next_state, done)
+        # for state, action, reward, next_state, done in mini_sample:
+        #     self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
@@ -129,17 +132,22 @@ class Agent(Player):
         new_state = self.get_state(board)
 
         self.train_short_memory(state, action, points, new_state, done)
-        self.remember(state, action, points, new_state, done)
+        self.memory.push(state, action, points, new_state, done)
 
         if done:
-            self.remember(state, action, points, new_state, done) 
+            self.memory.push(state, action, points, new_state, done) 
             self.train_long_memory()
-            print(f'Long Training! Epsilon: {epsilon}')
+            #print(f'Long Training! Epsilon: {epsilon}')
             if self.n_games % 20 == 0:
-                print('Updating Target Net!')
+                #print('Updating Target Net!')
                 self.trainer.update_target_net()
+                self.trainer.validate_and_plot()
             if self.n_games % 50 == 0:
                 self.net.save()
+
+        # if len(self.memory.queue) >= 100:
+        #     self.memory.save()
+        #     quit()
             
         return True
 
@@ -202,16 +210,16 @@ class Agent(Player):
         final_move = [0]*32
 
         if explore:
-            print("Random Move!")
+            #print("Random Move!")
             position = [0]*44
             valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
             tile_selection = random.randint(0, 1)
             random.shuffle(valid_spaces)
-            position[valid_spaces[0]+(21*tile_selection)] = 1
+            position[valid_spaces[0]+(21*tile_selection)] = 1.0
 
-            final_move = position
+            final_move = np.array(position)
         else:
-            print("Net Move!")
+            #print("Net Move!")
             state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
             q_values = self.net(state0)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
