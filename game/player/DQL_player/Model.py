@@ -6,7 +6,7 @@ import os
 import csv
 import numpy as np
 
-from ...constants import DEVICE
+from ...constants import BATCH_SIZE, DEVICE, TAU
 from ..score_plotter import Plotter
 
 class QNet(nn.Module):
@@ -53,8 +53,10 @@ class QTrainer:
 
         self.target.load_state_dict(self.net.state_dict())
         self.target.eval()
+        self.validation_states = []
+        self.load_validation_states()
 
-        self.plotter = Plotter(1, "Games", "Max Q", "Max Q Value per Game")
+        self.plotter = Plotter(1, "Games (K)", "Average Action Value (Q)", "Average Q per Game")
         self.max_q_average = []
 
     def train_step(self, state, action, reward, next_state, done):
@@ -77,7 +79,8 @@ class QTrainer:
         target = pred.clone()
         for idx in range(len(done)):
             if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.target(next_state[idx]))
+                next_action_idx = torch.argmax(self.net(next_state[idx])).item()
+                Q_new = reward[idx] + self.gamma * self.target(next_state[idx])[next_action_idx]
             else:
                 Q_new = reward[idx]
 
@@ -92,11 +95,10 @@ class QTrainer:
         self.optimizer.step()
 
     def update_target_net(self):
-        self.target.load_state_dict(self.net.state_dict())
-    
-    def validate_and_plot(self):
+        for target_parameters, main_parameters in zip(self.target.parameters(), self.net.parameters()):
+                target_parameters.data.copy_(TAU * main_parameters.data + (1.0 - TAU) * target_parameters.data)
 
-        states = []
+    def load_validation_states(self):
 
         with open('transitions.csv', mode='r') as file:
             transitions_file = csv.reader(file)
@@ -106,16 +108,21 @@ class QTrainer:
                 # state = []
                 # for position in lines[0]:
                 #     state.append(int(position))
-                states.append(eval(lines[0]))
+                self.validation_states.append(eval(lines[0]))
+        
+    
+    def validate_and_plot(self):
         
         max_q_current = []
 
-        for state in states:
+        for state in self.validation_states:
             state = torch.tensor(state, dtype=torch.float, device=DEVICE)
             pred = self.net(state)
             max_q_current.append(torch.max(pred).detach().cpu().numpy())
 
-        self.max_q_average.append(sum(max_q_current)/len(states))
+        self.max_q_average.append(sum(max_q_current)/len(self.validation_states))
+
+        print(self.max_q_average)
 
         self.plotter.plot_Q(self.max_q_average)
 

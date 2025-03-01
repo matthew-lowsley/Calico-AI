@@ -12,9 +12,14 @@ class Memory():
 
     def __init__(self):
         self.queue = deque(maxlen=MAX_MEMORY)
+        self.save_to_csv = False
+        self.save_limit = 50_000
     
     def push(self, *args):
         self.queue.append(Transition(*args))
+        # if self.save_to_csv and len(self.queue) >= self.save_limit:
+        #     self.save()
+        #     quit()
     
     def sample(self, batch_size):
         if batch_size > len(self.queue):

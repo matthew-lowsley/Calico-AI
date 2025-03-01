@@ -1,10 +1,12 @@
 from game.player.DQL_player.Agent import Agent
+from game.player.DQL_player.Memory import Memory
+from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.random_player import Random_Player
 from game.player.score_plotter import Plotter
 from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
-from .constants import FONT, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
+from .constants import DEVICE, FONT, LR, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
 from .props.cat import *
 
 import numpy as np
@@ -33,14 +35,21 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
+main_net = QNet(1728, 44)
+target_net = QNet(1728, 44)
+main_net.to(DEVICE)
+target_net.to(DEVICE)
+trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
+memory = Memory()
+
 class Game_Manager:
 
     def __init__(self, win):
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board(), Board()]
-        self.players = [Agent(), Random_Player()]
+        self.boards = [Board(), Board(), Board(), Board()]
+        self.players = [Agent(memory, trainer, False), Agent(memory, trainer, False), Agent(memory, trainer, False), Agent(memory, trainer, True)]
         self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
@@ -69,7 +78,7 @@ class Game_Manager:
         self.cats = starting_cats
 
         boards = self.read_json()
-        board_colours = np.array(['blue', 'blue', 'yellow', 'purple'])
+        board_colours = np.array(['blue', 'blue', 'blue', 'blue'])
 
         for player in self.players:
             #np.random.shuffle(objective_tiles)
@@ -171,6 +180,7 @@ class Game_Manager:
             self.calculate_scores()
             if not self.disable_graphics: self.draw_end_screen()
             #self.restart_game()
+            #print("Samples Collected: "+str(len(memory.queue)))
             return True
     
     def read_json(self):

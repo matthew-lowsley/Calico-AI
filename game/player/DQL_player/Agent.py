@@ -27,18 +27,24 @@ AVAILBABLE_SPACES = [Space(1,1,-2), Space(2,1,-3), Space(3,1,-4), Space(4,1,-5),
 
 class Agent(Player):
 
-    def __init__(self):
+    def __init__(self, memory, trainer, is_head):
         super().__init__()
-        self.n_games = 0
-        self.epsilon = 0.6
-        self.epsilon_decay = 0.0001
-        self.gamma = 0.9
-        self.memory = Memory()
-        self.net = QNet(1728, 44)
-        self.target_net = QNet(1728, 44)
-        self.net.to(DEVICE)
-        self.target_net.to(DEVICE)
-        self.trainer = QTrainer(self.net, self.target_net, lr=LR, gamma=self.gamma)
+        self.n_games = -1
+        self.epsilon = 1
+        self.epsilon_decay = 0.000001
+        self.gamma = 0.95
+        
+        self.memory = memory
+        self.trainer = trainer
+
+        self.is_head = is_head
+
+        #self.memory = Memory()
+        #self.net = QNet(1728, 44)
+        #self.target_net = QNet(1728, 44)
+        #self.net.to(DEVICE)
+        #self.target_net.to(DEVICE)
+        #self.trainer = QTrainer(self.net, self.target_net, lr=LR, gamma=self.gamma)
 
         self.turn = 0
         self.objectives_placed = False
@@ -99,12 +105,13 @@ class Agent(Player):
         #     mini_sample = random.sample(self.memory, BATCH_SIZE)
         # else:
         #     mini_sample = self.memory
-
+        
+    
         mini_sample = self.memory.sample(BATCH_SIZE)
         
         # this loops through the sample of states and trains the model
         states, actions , rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions , rewards, next_states, dones)
+        self.trainer.train_step(np.array(states), np.array(actions) , np.array(rewards), np.array(next_states), np.array(dones))
 
         # only doing one at a time at the moment
         # for state, action, reward, next_state, done in mini_sample:
@@ -115,7 +122,9 @@ class Agent(Player):
     
     def act(self, board, shop, events):
 
-        epsilon = self.epsilon - (self.n_games * self.epsilon_decay)
+        epsilon = self.epsilon - (self.n_games * self.epsilon_decay)*4
+        if epsilon < 0.1:
+            epsilon = 0.1
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
@@ -131,24 +140,22 @@ class Agent(Player):
 
         new_state = self.get_state(board)
 
-        self.train_short_memory(state, action, points, new_state, done)
+        #self.train_short_memory(state, action, points, new_state, done)
         self.memory.push(state, action, points, new_state, done)
 
         if done:
-            self.memory.push(state, action, points, new_state, done) 
-            self.train_long_memory()
-            #print(f'Long Training! Epsilon: {epsilon}')
-            if self.n_games % 20 == 0:
-                #print('Updating Target Net!')
-                self.trainer.update_target_net()
-                self.trainer.validate_and_plot()
-            if self.n_games % 50 == 0:
-                self.net.save()
+            if self.is_head:
+                if len(self.memory.queue) >= 10_000:
+                    self.trainer.update_target_net()
+                    self.train_long_memory()
+                    print(f'Training from Long Term Memory! Epsilon at: {epsilon}')
+                if self.n_games % 50 == 0:
+                    # Every 50 games save the nn progress
+                    self.trainer.net.save()
+                if self.n_games % 250 == 0:
+                    # Every 1000 games validate the nn is learning 
+                    self.trainer.validate_and_plot()
 
-        # if len(self.memory.queue) >= 100:
-        #     self.memory.save()
-        #     quit()
-            
         return True
 
     def action_mask(self, action):
@@ -178,7 +185,6 @@ class Agent(Player):
         # converts an array (of 32 elements) into a placing action
         # elements 0-21 = placing left hand tile in one of the 22 spaces
         # elements 22-43 = placing right hand tile in one of the 22 spaces
-
         action = np.array(action).argsort()
 
         points = 0
@@ -211,21 +217,21 @@ class Agent(Player):
 
         if explore:
             #print("Random Move!")
-            position = [0]*44
-            valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
-            tile_selection = random.randint(0, 1)
-            random.shuffle(valid_spaces)
-            position[valid_spaces[0]+(21*tile_selection)] = 1.0
-
-            final_move = np.array(position)
+            #position = [0]*44
+            #valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
+            #tile_selection = random.randint(0, 1)
+            #random.shuffle(valid_spaces)
+            #position[valid_spaces[0]+(21*tile_selection)] = 1.0
+            rng = np.random.default_rng()
+            final_move = rng.uniform(low=0.0, high=1.0, size=44)
         else:
             #print("Net Move!")
             state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
-            q_values = self.net(state0)
+            q_values = self.trainer.net(state0)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
             #q_values = torch.cat((position_q_values, hand_q_values, pick_q_values))
-            move = torch.tensor(q_values, device=DEVICE)
-            final_move = move.detach().cpu().numpy()
+            #move = torch.tensor(q_values, device=DEVICE)
+            final_move = q_values.detach().cpu().numpy()
 
         #print(len(final_move))
         return final_move

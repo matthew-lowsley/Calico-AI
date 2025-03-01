@@ -172,13 +172,13 @@ class Board:
 
         # This section checks how many points should be awarded.
         if colours_achieved and patterns_achieved:
-            print("Gold Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
+            #print("Gold Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
             return objective.tile.gold_points
         elif colours_achieved ^ patterns_achieved:
-            print("Blue Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
+            #print("Blue Objective Achieved "+"Colours: "+str(colour_dict_values_sorted)+" vs "+str(objective_rules_values)+" Patterns: "+str(pattern_dict_values_sorted)+" vs "+str(objective_rules_values))
             return objective.tile.blue_points
         else:
-            print("No Objective Achieved "+str(colour_dict_values_sorted)+" != "+str(objective_rules_values)+" and "+str(pattern_dict_values_sorted)+" != "+str(objective_rules_values))
+            #print("No Objective Achieved "+str(colour_dict_values_sorted)+" != "+str(objective_rules_values)+" and "+str(pattern_dict_values_sorted)+" != "+str(objective_rules_values))
             return 0
     
     def analyse_objectives(self, objectives):
@@ -203,7 +203,7 @@ class Board:
         points = cat.analyse_pattern(chain, self)
         if points > 0:
             self.disable_chain(chain, mode="pattern") 
-            print(str(cat)+" Got! "+ str(points) +" points!")
+            #print(str(cat)+" Got! "+ str(points) +" points!")
         return points
     
     def analyse_placement(self, space):

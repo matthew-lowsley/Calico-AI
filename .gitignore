@@ -1,3 +1,7 @@
+# ignore all .csv files
+
+*.csv
+
 venv/
 *.pyc
 .vscode/
