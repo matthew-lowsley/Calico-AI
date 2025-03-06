@@ -1,5 +1,5 @@
 from ..hex.hex import Hex, hex_to_pixel, Vector2
-from ..constants import HEX_SIZE, OFFSET, Colour, Pattern
+from ..constants import FONT, HEX_SIZE, OFFSET, Colour, Pattern
 from .tile import Colour_Pattern_Tile, Objective_Tile, Tile
 
 import math
@@ -17,6 +17,9 @@ class Space(Hex):
     def get_tile(self):
         return self.tile
     
+    def __repr__(self) -> str:
+        return f'{str(self.q)}, {str(self.r)}, {str(self.s)} : {self.tile}'
+    
 OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
 
 class Board:
@@ -30,7 +33,6 @@ class Board:
 
     def insert_tile(self, space : Space, tile : Tile):
         space = self.get_space(space)
-        #print(space)
         if space == None or space.tile != None or tile == None:
             return False, 0
         if type(tile) is Objective_Tile and self.objective_placement_validation(space) == False:
@@ -64,7 +66,15 @@ class Board:
             hex = self.board[key]
             print(hex)
 
-    def draw_space(self, win, position):
+    def print_indexes_of_space(self, spaces):
+        board_spaces = list(self.board.values())
+        for i in range(len(board_spaces)):
+            for j in range(len(spaces)):
+                if board_spaces[i].equal(spaces[j]):
+                    print(i)
+                    break
+
+    def draw_space(self, win, position, position_number):
         points = []
         for i in range(6):
             angle = math.radians(i * 60 - 30)
@@ -72,14 +82,17 @@ class Board:
             y = position.y + HEX_SIZE.y * math.sin(angle)
             points.append([x, y])
         pygame.draw.polygon(win, (255, 0, 0), points, 5)
+        points = FONT.render(str(position_number), True, (0,0,0))
+        win.blit(points, position)
 
     def draw(self, win):
-        for key in self.board.keys():
+
+        for i, key in enumerate(self.board.keys()):
             space = self.board[key]
             position = hex_to_pixel(space, HEX_SIZE, OFFSET)
-            self.draw_space(win, position)
             if space.tile != None:
                 space.tile.draw(win, position, HEX_SIZE)
+            self.draw_space(win, position, i)
 
     def find_existing_spaces(self, spaces):
         existing_spaces = []

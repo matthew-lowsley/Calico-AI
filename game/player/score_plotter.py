@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 class Plotter():
 
-    def __init__(self, n_players, xlabel, ylabel, title):
+    def __init__(self, n_players, xlabel, ylabel, title, file_name):
 
         plt.ion()
 
@@ -12,6 +12,7 @@ class Plotter():
         self.scores = [[] for _ in range(self.n_players)]
         self.lines = []
         self.n_games = 1
+        self.file_name = file_name
 
         for i in range(self.n_players):
             line, = self.ax.plot([], [], label=f"Player {i+1}")
@@ -39,7 +40,7 @@ class Plotter():
         plt.pause(0.001)
 
         if n_games % 50 == 0:
-            plt.savefig('DQL_Agent_Attempt1.png')
+            plt.savefig(self.file_name+'.png')
     
     def plot_Q(self, q_values):
 
@@ -52,6 +53,6 @@ class Plotter():
         plt.pause(0.001)
 
         if self.n_games % 50 == 0:
-            plt.savefig('DQL_Max_Q_Per_Game.png')
+            plt.savefig(self.file_name+'.png')
         
         self.n_games += 1

@@ -35,8 +35,8 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
-main_net = QNet(1728, 44)
-target_net = QNet(1728, 44)
+main_net = QNet(612, 44)
+target_net = QNet(612, 44)
 main_net.to(DEVICE)
 target_net.to(DEVICE)
 trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
@@ -48,8 +48,8 @@ class Game_Manager:
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board(), Board(), Board(), Board()]
-        self.players = [Agent(memory, trainer, False), Agent(memory, trainer, False), Agent(memory, trainer, False), Agent(memory, trainer, True)]
+        self.boards = [Board()]
+        self.players = [Agent(memory, trainer, True)]
         self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
@@ -61,7 +61,7 @@ class Game_Manager:
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
-        self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores")
+        self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
         self.disable_graphics = True
 
         self.restart_game()

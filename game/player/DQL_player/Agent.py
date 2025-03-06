@@ -13,25 +13,32 @@ from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.player import Player
 from game.props.board import Board, Space
 from game.props.cat import Almond, Callie, Cira, Coconut, Gwenivere, Leo, Oliver, Rumi, Tecolote, Tibbit
-from game.props.tile import Shop
+from game.props.tile import Objective_Tile, Shop
 
 OBJECTIVES_SPACES = [Space(0, 4, -4), Space(2, 2, -4), Space(3, 3, -6)]
 
-AVAILBABLE_SPACES = [Space(1,1,-2), Space(2,1,-3), Space(3,1,-4), Space(4,1,-5),
-                     Space(5,1,-6), Space(0,2,-2), Space(1,2,-3),
-                     Space(3,2,-5), Space(4,2,-6), Space(0,3,-3), Space(1,3,-4),
-                     Space(2,3,-5), Space(4,3,-7), Space(-1,4,-3),
-                     Space(1,4,-5), Space(2,4,-6), Space(3,4,-7),
-                     Space(-1,5,-4), Space(0,5,-5), Space(1,5,-6), Space(2,5,-7),
-                     Space(3,5,-8)]
+#AVAILBABLE_SPACES = [Space(1,1,-2), Space(2,1,-3), Space(3,1,-4), Space(4,1,-5),
+#                     Space(5,1,-6), Space(0,2,-2), Space(1,2,-3),
+#                     Space(3,2,-5), Space(4,2,-6), Space(0,3,-3), Space(1,3,-4),
+#                     Space(2,3,-5), Space(4,3,-7), Space(-1,4,-3),
+#                     Space(1,4,-5), Space(2,4,-6), Space(3,4,-7),
+#                     Space(-1,5,-4), Space(0,5,-5), Space(1,5,-6), Space(2,5,-7),
+#                     Space(3,5,-8)]
+
+AVAILBABLE_SPACES = [Space( 1, 1, -2), Space( 0, 2, -2), Space( 0, 3, -3), Space(-1, 4, -3),
+                     Space(-1, 5, -4), Space( 2, 1, -3), Space( 1, 2, -3), Space(1, 3, -4),
+                     Space(0, 5, -5), Space(3, 1, -4), Space(2, 3, -5), Space(1, 4, -5),
+                     Space(1, 5, -6), Space(4, 1, -5), Space(3,2,-5), Space(2, 4, -6),
+                     Space(2, 5, -7), Space(5, 1, -6), Space(4, 2, -6), Space(4, 3, -7),
+                     Space(3, 4, -7), Space(3, 5, -8)]
 
 class Agent(Player):
 
     def __init__(self, memory, trainer, is_head):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 1
-        self.epsilon_decay = 0.000001
+        self.epsilon = 0.5
+        self.epsilon_decay = 0.0001
         self.gamma = 0.95
         
         self.memory = memory
@@ -66,30 +73,36 @@ class Agent(Player):
     def get_state(self, board : Board):
         objectives_spaces = [tuple([0, 4, -4]), tuple([2, 2, -4]), tuple([3, 3, -6])]
         board_state = []
+        i = 0
+
         for key in board.board.keys():
             space = board.board[key]
             space_state = []
-            if key in objectives_spaces:
-                pass
-            else:
-                space_state += [0]*36
-                if space.tile != None:
-                    colour = 0
+            if space.tile != None:
+                if type(space.tile) is Objective_Tile:
+                    space_state += [1]*12
+                else:
+                    space_state += [0]*12
+                    colour = space.tile.colour.value
                     pattern = space.tile.pattern.value
-                    if len(space_state) == 36:
-                        colour = space.tile.colour.value
-                    space_state[(colour*6)+pattern] = 1
-                board_state += space_state
+                    space_state[colour] = 1
+                    space_state[pattern+6] = 1
+            else:
+                space_state += [0]*12
+            #print(f'State Creating - Tile {i} : {space_state}')
+            i += 1
+            board_state += space_state
 
         regular_hand_state = []
         if self.objectives_placed == False:
-            regular_hand_state = [0]*72
+            regular_hand_state = [0]*24
         else:
             for i in range(2):
-                tile_state = [0]*36
+                tile_state = [0]*12
                 colour = self.hand[i].colour.value
                 pattern = self.hand[i].pattern.value
-                tile_state[(colour*6)+pattern] = 1
+                tile_state[colour] = 1
+                tile_state[pattern+6] = 1
                 regular_hand_state += tile_state
     
         state = board_state + regular_hand_state
@@ -122,7 +135,8 @@ class Agent(Player):
     
     def act(self, board, shop, events):
 
-        epsilon = self.epsilon - (self.n_games * self.epsilon_decay)*4
+        # epsilon = 1
+        epsilon = self.epsilon - (self.n_games * self.epsilon_decay)
         if epsilon < 0.1:
             epsilon = 0.1
 
@@ -132,29 +146,28 @@ class Agent(Player):
         
         state = self.get_state(board)
 
-        action = self.get_action(state, random.random() < epsilon)
-        action = self.action_mask(action)
-        done, points = self.perform_action(action, shop, board, state)
+        action = self.get_action(state, random.uniform(0, 1) > epsilon)
+        #action = self.action_mask(action)
+        done, points, reward = self.perform_action(action, shop, board, state)
 
         self.points += points
 
         new_state = self.get_state(board)
 
         #self.train_short_memory(state, action, points, new_state, done)
-        self.memory.push(state, action, points, new_state, done)
+        self.memory.push(state, action, reward, new_state, done)
 
-        if done:
-            if self.is_head:
-                if len(self.memory.queue) >= 10_000:
+        if self.is_head:
+            if done:
+                self.trainer.recent_scores.append(self.points)
+                if self.n_games % 2 == 0:
                     self.trainer.update_target_net()
+                if self.n_games % 200 == 0:
+                    self.trainer.validate_and_plot()
+            if self.turn % 4 == 0:
+                if len(self.memory.queue) == MAX_MEMORY:
                     self.train_long_memory()
                     print(f'Training from Long Term Memory! Epsilon at: {epsilon}')
-                if self.n_games % 50 == 0:
-                    # Every 50 games save the nn progress
-                    self.trainer.net.save()
-                if self.n_games % 250 == 0:
-                    # Every 1000 games validate the nn is learning 
-                    self.trainer.validate_and_plot()
 
         return True
 
@@ -185,23 +198,38 @@ class Agent(Player):
         # converts an array (of 32 elements) into a placing action
         # elements 0-21 = placing left hand tile in one of the 22 spaces
         # elements 22-43 = placing right hand tile in one of the 22 spaces
+        #print(f'Turn: {self.turn}')
+        #print(action)
+        #print(state)
+        #print(board.board)
         action = np.array(action).argsort()
+
+        #print(action)
+
+        #print(action)
 
         points = 0
         i = -1
 
+        #print(action[i])
+
         j = 0
         if action[i] > 21:
             j = 1
+
+        reward = self.calculate_reward(AVAILBABLE_SPACES[action[i]-(j*22)], j, board)
         
         valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
         if not valid:
             print("selected invalid action!!! Bad news bears!")
+            #board.print_indexes_of_space(AVAILBABLE_SPACES)
+            #print(f'Trying to place {self.hand[j]} into space {board.board[AVAILBABLE_SPACES[action[i]-(j*22)]]}')
+            input("waiting for player input")
             exit()
         self.taken_spaces[action[i]-(j*22)] = 1
 
         if self.objectives_placed == True:
-            self.pick(shop, random.randint(0,2))
+            self.pick(shop, 2)
 
         done = False
 
@@ -209,25 +237,39 @@ class Agent(Player):
         if self.turn >= 22:
             done = True
 
-        return done, points
+        return done, points, reward
     
+    def calculate_reward(self, space, tile_idx, board):
+        reward = 0
+        neighbors = board.contains_tiles(board.find_existing_spaces(space.get_all_neighbors()))
+        for neighbor in neighbors:
+            if neighbor.tile.colour == self.hand[tile_idx].colour and neighbor.tile.colour_used == False:
+                reward += 3
+            if neighbor.tile.pattern == self.hand[tile_idx].pattern and neighbor.tile.pattern_used == False:
+                reward += board.cats[self.hand[tile_idx].pattern.name].points
+        if reward == 0:
+            reward -= (board.cats[self.hand[tile_idx].pattern.name].points + 3)
+        return reward
+
     def get_action(self, state, explore=False):
 
         final_move = [0]*32
+        state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
 
         if explore:
-            #print("Random Move!")
+            print("Random Move!")
             #position = [0]*44
             #valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
             #tile_selection = random.randint(0, 1)
             #random.shuffle(valid_spaces)
             #position[valid_spaces[0]+(21*tile_selection)] = 1.0
             rng = np.random.default_rng()
-            final_move = rng.uniform(low=0.0, high=1.0, size=44)
+            random_q_values = rng.uniform(low=0.0, high=1.0, size=44)
+            final_move = self.trainer.mask_action(torch.tensor(random_q_values, dtype=torch.float, device=DEVICE), state0)
+            final_move = final_move.detach().cpu().numpy()
         else:
-            #print("Net Move!")
-            state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
-            q_values = self.trainer.net(state0)
+            print("Net Move!")
+            q_values = self.trainer.get_action(state0)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
             #q_values = torch.cat((position_q_values, hand_q_values, pick_q_values))
             #move = torch.tensor(q_values, device=DEVICE)
