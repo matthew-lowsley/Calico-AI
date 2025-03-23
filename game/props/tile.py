@@ -87,28 +87,37 @@ class Bag:
 
     def __init__(self):
         self.bag = []
+        self.original_bag = []
         self.total_tiles_remaining = 0
+        self.tiles_remaining_original = {}
         self.tiles_remaining = {}
         #self.fill_bag()
 
     def fill_bag(self):
+
+        if len(self.original_bag) == 0:
+            self.generate_bag()
+        
+        self.bag = copy.deepcopy(self.original_bag)
+        self.total_tiles_remaining = len(self.bag)
+
+    def generate_bag(self):
         bag = []
-        self.total_tiles_remaining = 0
         for i in range(6):
             colour = Colour(i)
             for pattern in (Pattern):
-                self.tiles_remaining[str(colour.name)+"-"+str(pattern.name)] = 0
+                self.tiles_remaining_original[str(colour.name)+"-"+str(pattern.name)] = 0
                 for i in range(3):
                     bag.append(Colour_Pattern_Tile(colour, pattern))
-                    self.tiles_remaining[str(colour.name)+"-"+str(pattern.name)] += 1
+                    self.tiles_remaining_original[str(colour.name)+"-"+str(pattern.name)] += 1
         bag = np.array(bag)
+        np.random.seed(47)
         np.random.shuffle(bag)
-        self.bag = bag.tolist()
-        self.total_tiles_remaining = len(self.bag)
+        self.original_bag = bag.tolist()
 
     def take_tile(self):
         tile = self.bag.pop(0)
-        self.tiles_remaining[str(tile.colour.name)+"-"+str(tile.pattern.name)] -= 1
+        self.tiles_remaining_original[str(tile.colour.name)+"-"+str(tile.pattern.name)] -= 1
         self.total_tiles_remaining = len(self.bag)
         #print(self.tiles_remaining)
         #print(self.total_tiles_remaining)

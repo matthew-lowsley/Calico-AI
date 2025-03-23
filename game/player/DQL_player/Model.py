@@ -7,7 +7,7 @@ import csv
 import numpy as np
 import time
 
-from ...constants import BATCH_SIZE, CLIP_VALUE, DEVICE, TAU
+from ...constants import BATCH_SIZE, CLIP_VALUE, DEVICE, TAU, VALIDATE_EVERY
 from ..score_plotter import Plotter
 
 class QNet(nn.Module):
@@ -55,13 +55,15 @@ class QTrainer:
         self.target.load_state_dict(self.net.state_dict())
         self.target.eval()
         self.validation_states = []
-        #self.load_validation_states()
+        self.load_validation_states()
 
         self.recent_scores = []
         self.highest_average_score = 0
 
         self.Qplotter = Plotter(1, "Games (K)", "Average Action Value (Q)", "Average Q per Game", "Average_Q_Values")
         self.max_q_average = []
+
+        self.average_score_plotter = Plotter(1, f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
 
         #self.highest_score_plotter = Plotter(1, "Games (200s)", "Best Models so Far", "Average Score", "Best_Model_Scores")
 
@@ -86,7 +88,7 @@ class QTrainer:
         for idx in range(len(done)):
             if not done[idx]:
                 next_action = self.net(next_state[idx])
-                next_action_masked = self.mask_action(next_action, state[idx])
+                next_action_masked = self.mask_action(next_action, next_state[idx])
                 next_action_idx = torch.argmax(next_action_masked).item()
                 #next_action_idx = torch.argmax(self.net(next_state[idx])).item()
                 Q_new = reward[idx] + self.gamma * self.target(next_state[idx])[next_action_idx]
@@ -160,6 +162,8 @@ class QTrainer:
         self.max_q_average.append(sum(max_q_current)/len(self.validation_states))
 
         #print(self.max_q_average)
+
+        self.average_score_plotter.plot_average_scores(self.recent_scores, VALIDATE_EVERY)
 
         if (sum(self.recent_scores)/len(self.recent_scores)) > self.highest_average_score:
             self.highest_average_score = (sum(self.recent_scores)/len(self.recent_scores))

@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 import torch
 
-from game.constants import BATCH_SIZE, LR, MAX_MEMORY, Pattern, DEVICE
+from game.constants import BATCH_SIZE, LR, MAX_MEMORY, REPLAY_RECENT, VALIDATE_EVERY, Pattern, DEVICE
 from game.player.DQL_player.Memory import Memory
 from game.player.DQL_player.Model import QNet, QTrainer
 from game.player.player import Player
@@ -37,8 +37,8 @@ class Agent(Player):
     def __init__(self, memory, trainer, is_head):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 0.5
-        self.epsilon_decay = 0.0001
+        self.epsilon = 0.8
+        self.epsilon_decay = 0.001
         self.gamma = 0.95
         
         self.memory = memory
@@ -137,8 +137,8 @@ class Agent(Player):
 
         # epsilon = 1
         epsilon = self.epsilon - (self.n_games * self.epsilon_decay)
-        if epsilon < 0.1:
-            epsilon = 0.1
+        if epsilon < 0.01:
+            epsilon = 0.01
 
         if self.objectives_placed == False:
             self.place_objectives(board, shop)
@@ -146,7 +146,7 @@ class Agent(Player):
         
         state = self.get_state(board)
 
-        action = self.get_action(state, random.uniform(0, 1) > epsilon)
+        action = self.get_action(state, random.uniform(0, 1) < epsilon)
         #action = self.action_mask(action)
         done, points, reward = self.perform_action(action, shop, board, state)
 
@@ -157,14 +157,15 @@ class Agent(Player):
         #self.train_short_memory(state, action, points, new_state, done)
         self.memory.push(state, action, reward, new_state, done)
 
+
         if self.is_head:
             if done:
                 self.trainer.recent_scores.append(self.points)
                 if self.n_games % 2 == 0:
                     self.trainer.update_target_net()
-                if self.n_games % 200 == 0:
+                if self.n_games % VALIDATE_EVERY == 0:
                     self.trainer.validate_and_plot()
-            if self.turn % 4 == 0:
+            if self.turn % REPLAY_RECENT == 0:
                 if len(self.memory.queue) == MAX_MEMORY:
                     self.train_long_memory()
                     print(f'Training from Long Term Memory! Epsilon at: {epsilon}')

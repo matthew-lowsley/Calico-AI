@@ -6,7 +6,7 @@ class Plotter():
 
         plt.ion()
 
-        plt.figure()
+        self.fig = plt.figure()
         self.ax = plt.subplot()
         self.n_players = n_players
         self.scores = [[] for _ in range(self.n_players)]
@@ -40,7 +40,7 @@ class Plotter():
         plt.pause(0.001)
 
         if n_games % 50 == 0:
-            plt.savefig(self.file_name+'.png')
+            self.fig.savefig(self.file_name+'.png')
     
     def plot_Q(self, q_values):
 
@@ -53,6 +53,28 @@ class Plotter():
         plt.pause(0.001)
 
         if self.n_games % 50 == 0:
-            plt.savefig(self.file_name+'.png')
+            #plt.savefig(self.file_name+'.png')
+            self.fig.savefig(self.file_name+'.png')
         
         self.n_games += 1
+
+    def plot_average_scores(self, scores, x_games):
+
+        score = sum(scores) / x_games
+        self.scores[0].append(score)
+        
+        self.lines[0].set_ydata(self.scores[0])
+        self.lines[0].set_xdata(range(len(self.scores[0])))
+
+        self.ax.set_title(f"Average Score Every {x_games} Games")
+        self.ax.relim()
+        self.ax.autoscale_view()
+        plt.draw()
+        plt.pause(0.001)
+
+        
+        if self.n_games % 50 == 0:
+            self.fig.savefig(self.file_name+'.png')
+
+        self.n_games += 1
+

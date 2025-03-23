@@ -71,6 +71,7 @@ class Game_Manager:
         self.player = 0
         self.turn = 0
         self.bag.fill_bag()
+        self.shop.tiles = [None, None, None]
         self.shop.stock_shop()
 
         #CHANGE THIS TO HAVE RANDOM CATS AGAIN
@@ -111,6 +112,7 @@ class Game_Manager:
 
         for player in self.players:
             player.hand = [self.bag.take_tile(), self.bag.take_tile(), None, None]
+            #print(f'Player Starting Hand : {player.hand}')
 
     def draw(self):
         self.win.fill((255, 255, 255))
@@ -160,7 +162,7 @@ class Game_Manager:
 
     def next_turn(self):
         self.turn += 1
-        #pygame.time.wait(1500)
+        #pygame.time.wait(2000)
 
     def step(self, events):
 
@@ -175,6 +177,8 @@ class Game_Manager:
                 self.give_starting_hand()
 
             self.next_turn()
+
+        #print(f'Turn {self.turn} : {self.shop.tiles}')
 
         if self.turn >= self.final_turn:
             self.calculate_scores()
