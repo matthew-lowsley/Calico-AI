@@ -1,6 +1,6 @@
 from game.player.DQL_player.Agent import Agent
 from game.player.DQL_player.Memory import Memory
-from game.player.DQL_player.Model import QNet, QTrainer
+from game.player.DQL_player.Model import CQNet, QNet, QTrainer
 from game.player.random_player import Random_Player
 from game.player.score_plotter import Plotter
 from .props.board import Board
@@ -35,8 +35,8 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
-main_net = QNet(612, 44)
-target_net = QNet(612, 44)
+main_net = CQNet()
+target_net = CQNet()
 main_net.to(DEVICE)
 target_net.to(DEVICE)
 trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
@@ -162,6 +162,7 @@ class Game_Manager:
 
     def next_turn(self):
         self.turn += 1
+        #input("Press Enter for Next Turn!")
         #pygame.time.wait(2000)
 
     def step(self, events):

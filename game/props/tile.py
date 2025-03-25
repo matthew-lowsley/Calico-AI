@@ -85,12 +85,13 @@ class Objective_Tile(Tile):
 
 class Bag:
 
-    def __init__(self):
+    def __init__(self, seed=None):
         self.bag = []
         self.original_bag = []
         self.total_tiles_remaining = 0
         self.tiles_remaining_original = {}
         self.tiles_remaining = {}
+        self.seed = seed
         #self.fill_bag()
 
     def fill_bag(self):
@@ -111,7 +112,8 @@ class Bag:
                     bag.append(Colour_Pattern_Tile(colour, pattern))
                     self.tiles_remaining_original[str(colour.name)+"-"+str(pattern.name)] += 1
         bag = np.array(bag)
-        np.random.seed(47)
+        if self.seed:
+            np.random.seed(self.seed)
         np.random.shuffle(bag)
         self.original_bag = bag.tolist()
 

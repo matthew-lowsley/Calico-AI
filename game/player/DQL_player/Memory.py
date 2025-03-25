@@ -13,7 +13,7 @@ class Memory():
     def __init__(self):
         self.queue = deque(maxlen=MAX_MEMORY)
         self.save_to_csv = False
-        self.save_limit = 20_000
+        self.save_limit = 1000
     
     def push(self, *args):
         self.queue.append(Transition(*args))

@@ -69,6 +69,65 @@ class Agent(Player):
         self.hand = []
         self.taken_spaces = [0]*22
         self.available_places = copy.deepcopy(AVAILBABLE_SPACES)
+
+    def get_state2(self, board : Board):
+
+        state = {}
+
+        board_state = []
+        col = []
+        i = 0
+        # Each space is a 14 bit array where:
+        # - the first 6 bits are colour
+        # - the next 6 are pattern and 
+        # - the final two are colour_used? and pattern_used?
+        for key in board.board.keys():
+            space = board.board[key]
+            space_state = [0]*14
+            if space.tile != None:
+                if type(space.tile) is Objective_Tile:
+                    space_state = [1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 0]
+                else:
+                    colour = space.tile.colour.value
+                    pattern = space.tile.pattern.value
+                    space_state[colour] = 1
+                    space_state[pattern+6] = 1
+                    if space.tile.colour_used:
+                        space_state[12] = 1
+                    if space.tile.pattern_used:
+                        space_state[13] = 1
+            #print(f"{i} - {space.tile} - {space_state}")
+            col.append(space_state)
+            if len(col) == 7:
+                board_state.append(col)
+                col = []
+            i += 1
+
+        #print(f"Length of board: {len(board_state)}")
+        #print(f"Length of board[0]: {len(board_state[0])}")
+
+        #state["board"] = board_state
+
+        hand_state = []
+        if self.objectives_placed == False:
+            hand_state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]*2
+        else:
+            for i in range(2):
+                tile_state = [0]*14
+                colour = self.hand[i].colour.value
+                pattern = self.hand[i].pattern.value
+                #print(f"Colour {colour}")
+                #print(f"Pattern {pattern}")
+                tile_state[colour] = 1
+                tile_state[pattern+6] = 1
+                hand_state.append(tile_state)
+
+        state["hand"] = hand_state
+
+        #print(board_state)
+
+        return np.array(board_state)
+
     
     def get_state(self, board : Board):
         objectives_spaces = [tuple([0, 4, -4]), tuple([2, 2, -4]), tuple([3, 3, -6])]
@@ -144,7 +203,7 @@ class Agent(Player):
             self.place_objectives(board, shop)
             return True
         
-        state = self.get_state(board)
+        state = self.get_state2(board)
 
         action = self.get_action(state, random.uniform(0, 1) < epsilon)
         #action = self.action_mask(action)
@@ -152,7 +211,7 @@ class Agent(Player):
 
         self.points += points
 
-        new_state = self.get_state(board)
+        new_state = self.get_state2(board)
 
         #self.train_short_memory(state, action, points, new_state, done)
         self.memory.push(state, action, reward, new_state, done)
@@ -167,8 +226,10 @@ class Agent(Player):
                     self.trainer.validate_and_plot()
             if self.turn % REPLAY_RECENT == 0:
                 if len(self.memory.queue) == MAX_MEMORY:
-                    self.train_long_memory()
                     print(f'Training from Long Term Memory! Epsilon at: {epsilon}')
+                    self.train_long_memory()
+
+        self.get_state2(board)
 
         return True
 

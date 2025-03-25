@@ -42,6 +42,82 @@ class QNet(nn.Module):
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
+class CQNet(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d( in_channels=14 , out_channels=14, kernel_size=3, padding=0, bias=False)
+        self.conv2 = nn.Conv2d( in_channels=14, out_channels=14, kernel_size=3, padding=0, bias=False)
+        self.linear = nn.Linear(14*3*3, 44)
+
+    def forward(self, x):
+        #print(f"Size 1: {x.shape}")
+        x = F.relu(self.conv1(x))
+        #print(f"Size 2: {x.shape}")
+        x = F.relu(self.conv2(x))
+        #print(f"Size 3: {x.shape}")
+        x = torch.flatten(x, start_dim=1)
+        #print(f"Size 4: {x.shape}")
+        x = self.linear(x)
+        #print(f"Size 5: {x.shape}")
+        return x
+    
+    def preprocess_input(self, x):
+
+        #states = []
+
+        # for i in range(len(x)):
+        #     current_state = x[i]
+        #     if isinstance(current_state, torch.Tensor):
+        #         print(f"state shape: {current_state.shape}")
+        #         print(f"state dims: {current_state.dim()}")
+        #         if current_state.dim() == 3:
+        #             print("Trying!!!")
+        #             current_state = torch.unsqueeze(current_state, 0)
+        #         print(f"state dims again: {x[i].shape}")
+        #         states.append(current_state.permute(0, 3, 1, 2))
+        #     else:
+        #         current_state = torch.tensor(x[i], dtype=torch.float32, device=DEVICE)
+        #         if current_state.dim() == 3:
+        #             current_state = current_state.unsqueeze(0)
+        #         states.append(current_state.permute(0, 3, 1, 2))
+        # return states
+
+        #print(f"Start: {x}")
+
+        #print(f"Start Shape: {x.shape}")
+
+        states = torch.Tensor([])
+
+        for state in x:
+            if isinstance(state, torch.Tensor) == False:
+                state = torch.tensor(state, dtype=torch.float32, device=DEVICE)
+            if state.dim() == 3:
+                #print(f"Mid Shape: {state.shape}")
+                state = torch.unsqueeze(state, dim=0)
+            state = state.permute(0, 3, 1, 2)
+            states = torch.cat((states, state), dim=0)
+
+        #print(f"End: {x}")
+
+        #states = torch.squeeze(states)
+
+        #if states.dim() == 5:
+        #    states = torch.squeeze(states) 
+
+        #print(f"Ending Shape: {states.shape}")
+
+        return states
+    
+    def save(self, file_name='model.pth'):
+        model_folder_path = './models'
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+
+        file_name = os.path.join(model_folder_path, file_name)
+        torch.save(self.state_dict(), file_name)
+
+
 class QTrainer:
 
     def __init__(self, net, target_net, lr, gamma):
@@ -75,6 +151,9 @@ class QTrainer:
         action = torch.tensor(action, dtype=torch.float, device=DEVICE)
         reward = torch.tensor(reward, dtype=torch.float, device=DEVICE)
 
+        #state = state.permute(2, 0, 1).unsqueeze(state)
+        #next_state = state.permute(2, 0, 1).unsqueeze(next_state)
+
         if len(state.shape) == 1:
             state = torch.unsqueeze(state, 0)
             next_state = torch.unsqueeze(next_state, 0)
@@ -82,16 +161,24 @@ class QTrainer:
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
-        pred = self.net(state)
+
+        processed_states = self.net.preprocess_input(state)
+
+        #print(f"Next States Shape: {next_state.shape}")
+
+        processed_next_states = self.net.preprocess_input(next_state)
+        pred = self.net(processed_states)
         #print(pred)
         target = pred.clone()
         for idx in range(len(done)):
             if not done[idx]:
-                next_action = self.net(next_state[idx])
-                next_action_masked = self.mask_action(next_action, next_state[idx])
+                #print(f"Single next state shape:  {processed_next_states[idx].shape}")
+                next_action = self.net(torch.unsqueeze(processed_next_states[idx], 0))
+                next_action_masked = self.mask_action(next_action[0], next_state[idx])
                 next_action_idx = torch.argmax(next_action_masked).item()
+                #print("Action Masked!")
                 #next_action_idx = torch.argmax(self.net(next_state[idx])).item()
-                Q_new = reward[idx] + self.gamma * self.target(next_state[idx])[next_action_idx]
+                Q_new = reward[idx] + self.gamma * self.target(torch.unsqueeze(processed_next_states[idx], 0))[0][next_action_idx]
             else:
                 Q_new = reward[idx]
 
@@ -125,21 +212,18 @@ class QTrainer:
                 self.validation_states.append(eval(lines[0]))
 
     def mask_action(self, action, state):
-        #placement_idxs = [8, 9, 10, 11, 12, 15, 16, 18, 19, 22, 23, 24, 26, 29, 31, 32, 33, 36, 37, 38, 39, 40]
         placement_idxs = [8, 9, 10, 11, 12, 15, 16, 17, 19, 22, 24, 25, 26, 29, 30, 32, 33, 36, 37, 38, 39, 40]
-       #placement_idxs = [8, 9, 10, 11, 12, 15, 16, 17, 19, 22, 24, 25, 26, 29, 30, 32, 33, 36, 37, 38, 39, 40]
-        # for i, idx in enumerate(placement_idxs):
-        #     action[i+22] = -float('inf')
-        #     if sum(state[((idx)*12):((idx)*12)+12]) > 0:
-        #         action[i] = -float('inf')
-        #         action[i+22] = -float('inf')
-        #self.print_state(state)
+        #print(f"Action state: {state}")
+        #print(f"Action: {action}")
         for i, idx in enumerate(placement_idxs):
-            space_state = state[(idx)*12:(idx)*12+12]
-            if torch.all(space_state == 0) == False:
-                #print(f'Tile {idx} : {space_state} Position is taken!')
+            col = (idx // 7)
+            row = (idx % 7)
+            #print(f"col: {col}, row: {row}")
+            #print(state[col][row])
+            if torch.all(state[col][row] == 0) == False:
                 action[i] = -float('inf')
                 action[i+22] = -float('inf')
+        #print(action)
         return action
     
     def print_state(self, state):
@@ -147,8 +231,10 @@ class QTrainer:
             print(f'Action Selecting - Tile {i} : {state[i*12:i*12+12]}')
 
     def get_action(self, state):
-        action = self.net(state)
-        return self.mask_action(action, state)
+        processed_state = self.net.preprocess_input(torch.unsqueeze(state, dim=0))
+        #print(f"processed state: {processed_state}")
+        action = self.net(processed_state)
+        return self.mask_action(action[0], state)
 
     def validate_and_plot(self):
         
@@ -156,7 +242,8 @@ class QTrainer:
 
         for state in self.validation_states:
             state = torch.tensor(state, dtype=torch.float, device=DEVICE)
-            pred = self.net(state)
+            #processed_state = self.net.preprocess_input(state)
+            pred = self.get_action(state)
             max_q_current.append(torch.max(pred).detach().cpu().numpy())
 
         self.max_q_average.append(sum(max_q_current)/len(self.validation_states))
