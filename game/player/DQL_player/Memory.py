@@ -13,7 +13,7 @@ class Memory():
     def __init__(self):
         self.queue = deque(maxlen=MAX_MEMORY)
         self.save_to_csv = False
-        self.save_limit = 1000
+        self.save_limit = 20_000
     
     def push(self, *args):
         self.queue.append(Transition(*args))
@@ -37,13 +37,16 @@ class Memory():
         with open("transitions.csv", 'w', newline='') as file:
             writer = csv.writer(file)
 
-            writer.writerow(['state', 'action', 'reward', 'next_state', 'done'])
+            writer.writerow(['board_state', 'hand_state', 'action', 
+                             'reward', 'next_board_state', 'next_hand_state', 'done'])
 
             for transition in self.queue:
                 writer.writerow([
-                    transition.state.tolist(),
+                    transition.board_state.tolist(),
+                    transition.hand_state.tolist(),
                     transition.action.tolist(),
                     transition.reward,
-                    transition.next_state.tolist(),
+                    transition.next_board_state.tolist(),
+                    transition.next_hand_state.tolist(),
                     transition.done
                 ])

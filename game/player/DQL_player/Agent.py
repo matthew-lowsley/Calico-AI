@@ -106,11 +106,11 @@ class Agent(Player):
         #print(f"Length of board: {len(board_state)}")
         #print(f"Length of board[0]: {len(board_state[0])}")
 
-        #state["board"] = board_state
+        state["board"] = np.array(board_state)
 
         hand_state = []
         if self.objectives_placed == False:
-            hand_state = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]*2
+            hand_state = [0]*28
         else:
             for i in range(2):
                 tile_state = [0]*14
@@ -120,13 +120,13 @@ class Agent(Player):
                 #print(f"Pattern {pattern}")
                 tile_state[colour] = 1
                 tile_state[pattern+6] = 1
-                hand_state.append(tile_state)
+                hand_state += tile_state
 
-        state["hand"] = hand_state
+        state["hand"] = np.array(hand_state)
 
         #print(board_state)
 
-        return np.array(board_state)
+        return state
 
     
     def get_state(self, board : Board):
@@ -182,8 +182,11 @@ class Agent(Player):
         mini_sample = self.memory.sample(BATCH_SIZE)
         
         # this loops through the sample of states and trains the model
-        states, actions , rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(np.array(states), np.array(actions) , np.array(rewards), np.array(next_states), np.array(dones))
+        board_states, hand_states, actions , rewards, next_board_states, next_hand_states, dones = zip(*mini_sample)
+        self.trainer.train_step(np.array(board_states), np.array(hand_states),
+                                np.array(actions), np.array(rewards), 
+                                np.array(next_board_states), np.array(next_hand_states),
+                                np.array(dones))
 
         # only doing one at a time at the moment
         # for state, action, reward, next_state, done in mini_sample:
@@ -207,14 +210,14 @@ class Agent(Player):
 
         action = self.get_action(state, random.uniform(0, 1) < epsilon)
         #action = self.action_mask(action)
-        done, points, reward = self.perform_action(action, shop, board, state)
+        done, points, reward = self.perform_action(action, shop, board)
 
         self.points += points
 
         new_state = self.get_state2(board)
 
         #self.train_short_memory(state, action, points, new_state, done)
-        self.memory.push(state, action, reward, new_state, done)
+        self.memory.push(state['board'], state['hand'], action, reward, new_state['board'], new_state['hand'], done)
 
 
         if self.is_head:
@@ -255,7 +258,7 @@ class Agent(Player):
     def pick(self, shop, shop_idx):
         self.take_tile(shop.take_tile(index=shop_idx))
 
-    def perform_action(self, action, shop, board, state):
+    def perform_action(self, action, shop, board):
 
         # converts an array (of 32 elements) into a placing action
         # elements 0-21 = placing left hand tile in one of the 22 spaces
@@ -316,7 +319,8 @@ class Agent(Player):
     def get_action(self, state, explore=False):
 
         final_move = [0]*32
-        state0 = torch.tensor(state, dtype=torch.float, device=DEVICE)
+        board_state = torch.tensor(state['board'], dtype=torch.float, device=DEVICE)
+        hand_state = torch.tensor(state['hand'], dtype=torch.float, device=DEVICE)
 
         if explore:
             print("Random Move!")
@@ -327,11 +331,11 @@ class Agent(Player):
             #position[valid_spaces[0]+(21*tile_selection)] = 1.0
             rng = np.random.default_rng()
             random_q_values = rng.uniform(low=0.0, high=1.0, size=44)
-            final_move = self.trainer.mask_action(torch.tensor(random_q_values, dtype=torch.float, device=DEVICE), state0)
+            final_move = self.trainer.mask_action(torch.tensor(random_q_values, dtype=torch.float, device=DEVICE), board_state)
             final_move = final_move.detach().cpu().numpy()
         else:
             print("Net Move!")
-            q_values = self.trainer.get_action(state0)
+            q_values = self.trainer.get_action(board_state, hand_state)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
             #q_values = torch.cat((position_q_values, hand_q_values, pick_q_values))
             #move = torch.tensor(q_values, device=DEVICE)

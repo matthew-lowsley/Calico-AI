@@ -36,7 +36,7 @@ class Objective(Enum):
     AABBCD = 4
     ABCDEF = 5
 
-Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
+Transition = namedtuple('Transition', ('board_state', 'hand_state', 'action', 'reward', 'next_board_state', 'next_hand_state','done'))
 
 WIDTH, HEIGHT = 960, 720
 
@@ -49,7 +49,7 @@ FPS = 60
 HEX_SIZE = Vector2(50, 50)
 OFFSET = Vector2(200, 50)
 
-MAX_MEMORY = 1000
+MAX_MEMORY = 1000 #1000
 BATCH_SIZE = 100
 LR = 0.001
 TAU = 0.005

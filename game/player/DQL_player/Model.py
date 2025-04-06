@@ -48,17 +48,31 @@ class CQNet(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d( in_channels=14 , out_channels=14, kernel_size=3, padding=0, bias=False)
         self.conv2 = nn.Conv2d( in_channels=14, out_channels=14, kernel_size=3, padding=0, bias=False)
-        self.linear = nn.Linear(14*3*3, 44)
+        self.linear = nn.Linear((14*3*3) + 28 , 44)
 
-    def forward(self, x):
-        #print(f"Size 1: {x.shape}")
-        x = F.relu(self.conv1(x))
+        with torch.no_grad():
+            weights = torch.tensor([[0., 1., 1.],
+                                    [1., 1., 1.],
+                                    [0., 1., 1.]]).unsqueeze(0).unsqueeze(0)
+            weights.requires_grad = True
+            weights = weights.view(1, 1, 3, 3).repeat(14, 14, 1, 1)
+            self.conv1.weight = nn.Parameter(weights)
+            self.conv2.weight = nn.Parameter(weights)
+
+    def forward(self, board_state, hand_state):
+        #print(f"Size 1: {board_state.shape}")
+        board_state = F.relu(self.conv1(board_state))
         #print(f"Size 2: {x.shape}")
-        x = F.relu(self.conv2(x))
+        board_state = F.relu(self.conv2(board_state))
         #print(f"Size 3: {x.shape}")
-        x = torch.flatten(x, start_dim=1)
+        board_state = torch.flatten(board_state, start_dim=1)
         #print(f"Size 4: {x.shape}")
-        x = self.linear(x)
+        #print(board_state)
+        #print(hand_state)
+        if hand_state.dim() == 1:
+            hand_state = torch.unsqueeze(hand_state, 0)
+        state = torch.cat((board_state, hand_state), dim=-1)
+        x = self.linear(state)
         #print(f"Size 5: {x.shape}")
         return x
     
@@ -87,7 +101,7 @@ class CQNet(nn.Module):
 
         #print(f"Start Shape: {x.shape}")
 
-        states = torch.Tensor([])
+        states = torch.tensor([], device=DEVICE)
 
         for state in x:
             if isinstance(state, torch.Tensor) == False:
@@ -143,42 +157,45 @@ class QTrainer:
 
         #self.highest_score_plotter = Plotter(1, "Games (200s)", "Best Models so Far", "Average Score", "Best_Model_Scores")
 
-    def train_step(self, state, action, reward, next_state, done):
+    def train_step(self, board_state, hand_state, action, reward, next_board_state, next_hand_state, done):
 
         # Convet lists/single values to tensors
-        state = torch.tensor(state, dtype=torch.float, device=DEVICE)
-        next_state = torch.tensor(next_state, dtype=torch.float, device=DEVICE)
+        board_state = torch.tensor(board_state, dtype=torch.float, device=DEVICE)
+        hand_state = torch.tensor(hand_state, dtype=torch.float, device=DEVICE)
+        next_board_state = torch.tensor(next_board_state, dtype=torch.float, device=DEVICE)
+        next_hand_state = torch.tensor(next_hand_state, dtype=torch.float, device=DEVICE )
         action = torch.tensor(action, dtype=torch.float, device=DEVICE)
         reward = torch.tensor(reward, dtype=torch.float, device=DEVICE)
 
         #state = state.permute(2, 0, 1).unsqueeze(state)
         #next_state = state.permute(2, 0, 1).unsqueeze(next_state)
 
-        if len(state.shape) == 1:
-            state = torch.unsqueeze(state, 0)
-            next_state = torch.unsqueeze(next_state, 0)
+        if len(board_state.shape) == 1:
+            board_state = torch.unsqueeze(board_state, 0)
+            next_board_state = torch.unsqueeze(next_board_state, 0)
+            hand_state = torch.unsqueeze(hand_state, 0)
+            next_hand_state = torch.unsqueeze(next_hand_state, 0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
-
-        processed_states = self.net.preprocess_input(state)
+        processed_states = self.net.preprocess_input(board_state)
 
         #print(f"Next States Shape: {next_state.shape}")
 
-        processed_next_states = self.net.preprocess_input(next_state)
-        pred = self.net(processed_states)
+        processed_next_states = self.net.preprocess_input(next_board_state)
+        pred = self.net(processed_states, hand_state)
         #print(pred)
         target = pred.clone()
         for idx in range(len(done)):
             if not done[idx]:
                 #print(f"Single next state shape:  {processed_next_states[idx].shape}")
-                next_action = self.net(torch.unsqueeze(processed_next_states[idx], 0))
-                next_action_masked = self.mask_action(next_action[0], next_state[idx])
+                next_action = self.net(torch.unsqueeze(processed_next_states[idx], 0), next_hand_state[idx])
+                next_action_masked = self.mask_action(next_action[0], next_board_state[idx])
                 next_action_idx = torch.argmax(next_action_masked).item()
                 #print("Action Masked!")
                 #next_action_idx = torch.argmax(self.net(next_state[idx])).item()
-                Q_new = reward[idx] + self.gamma * self.target(torch.unsqueeze(processed_next_states[idx], 0))[0][next_action_idx]
+                Q_new = reward[idx] + self.gamma * self.target(torch.unsqueeze(processed_next_states[idx], 0), next_hand_state[idx])[0][next_action_idx]
             else:
                 Q_new = reward[idx]
 
@@ -209,7 +226,7 @@ class QTrainer:
                 # state = []
                 # for position in lines[0]:
                 #     state.append(int(position))
-                self.validation_states.append(eval(lines[0]))
+                self.validation_states.append({'board_state' : eval(lines[0]), 'hand_state' : eval(lines[1])})
 
     def mask_action(self, action, state):
         placement_idxs = [8, 9, 10, 11, 12, 15, 16, 17, 19, 22, 24, 25, 26, 29, 30, 32, 33, 36, 37, 38, 39, 40]
@@ -230,20 +247,21 @@ class QTrainer:
         for i in range(47):
             print(f'Action Selecting - Tile {i} : {state[i*12:i*12+12]}')
 
-    def get_action(self, state):
-        processed_state = self.net.preprocess_input(torch.unsqueeze(state, dim=0))
+    def get_action(self, board_state, hand_state):
+        processed_board_state = self.net.preprocess_input(torch.unsqueeze(board_state, dim=0))
         #print(f"processed state: {processed_state}")
-        action = self.net(processed_state)
-        return self.mask_action(action[0], state)
+        action = self.net(processed_board_state, hand_state)
+        return self.mask_action(action[0], board_state)
 
     def validate_and_plot(self):
         
         max_q_current = []
 
         for state in self.validation_states:
-            state = torch.tensor(state, dtype=torch.float, device=DEVICE)
+            board_state = torch.tensor(state['board_state'], dtype=torch.float, device=DEVICE)
+            hand_state = torch.tensor(state['hand_state'], dtype=torch.float, device=DEVICE)
             #processed_state = self.net.preprocess_input(state)
-            pred = self.get_action(state)
+            pred = self.get_action(board_state, hand_state)
             max_q_current.append(torch.max(pred).detach().cpu().numpy())
 
         self.max_q_average.append(sum(max_q_current)/len(self.validation_states))

@@ -102,6 +102,9 @@ class Bag:
         self.bag = copy.deepcopy(self.original_bag)
         self.total_tiles_remaining = len(self.bag)
 
+        if self.seed == None:
+            np.random.shuffle(self.bag)
+
     def generate_bag(self):
         bag = []
         for i in range(6):
@@ -112,8 +115,8 @@ class Bag:
                     bag.append(Colour_Pattern_Tile(colour, pattern))
                     self.tiles_remaining_original[str(colour.name)+"-"+str(pattern.name)] += 1
         bag = np.array(bag)
-        if self.seed:
-            np.random.seed(self.seed)
+        #if self.seed:
+        #    np.random.seed(self.seed)
         np.random.shuffle(bag)
         self.original_bag = bag.tolist()
 
