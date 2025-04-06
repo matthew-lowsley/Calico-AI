@@ -131,13 +131,15 @@ class CQNet(nn.Module):
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
-
 class QTrainer:
 
-    def __init__(self, net, target_net, lr, gamma):
+    def __init__(self, net, target_net, lr, gamma, pretrained_model=None):
         self.lr = lr
         self.gamma = gamma
         self.net = net
+        if pretrained_model:
+            self.net.load_state_dict(torch.load(os.path.join('./models', pretrained_model)))
+            self.net.eval()
         self.target = target_net
         self.optimizer = optim.Adam(net.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()

@@ -37,8 +37,8 @@ class Agent(Player):
     def __init__(self, memory, trainer, is_head):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 0.8
-        self.epsilon_decay = 0.001
+        self.epsilon = 0 #0.8
+        self.epsilon_decay = 0 #0.001
         self.gamma = 0.95
         
         self.memory = memory

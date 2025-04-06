@@ -39,7 +39,7 @@ main_net = CQNet()
 target_net = CQNet()
 main_net.to(DEVICE)
 target_net.to(DEVICE)
-trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
+trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-28.76-1743369598.6764956.pth')
 memory = Memory()
 
 class Game_Manager:
@@ -49,7 +49,7 @@ class Game_Manager:
 
         self.current_player = 0
         self.boards = [Board()]
-        self.players = [Agent(memory, trainer, True)]
+        self.players = [Agent(memory, trainer, False)]
         self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
