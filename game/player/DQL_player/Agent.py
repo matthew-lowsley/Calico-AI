@@ -255,8 +255,25 @@ class Agent(Player):
             valid, points = board.insert_tile(OBJECTIVES_SPACES[i], self.hand[i])
         self.objectives_placed = True
 
-    def pick(self, shop, shop_idx):
-        self.take_tile(shop.take_tile(index=shop_idx))
+    def pick(self, shop, board):
+        
+        tiles = shop.tiles
+        best_tile_idx = 0
+        highest_reward = 0
+
+        for i, tile in enumerate(tiles):
+            tile_reward = 0
+            for space in AVAILBABLE_SPACES:
+                board_space = board.get_space(space)
+                if board_space.tile == None:
+                    reward = self.calculate_reward(board_space, tile, board)
+                    if reward > 0:
+                        tile_reward += reward
+            if tile_reward > highest_reward:
+                highest_reward = tile_reward
+                best_tile_idx = i
+
+        self.take_tile(shop.take_tile(index=best_tile_idx))
 
     def perform_action(self, action, shop, board):
 
@@ -282,7 +299,8 @@ class Agent(Player):
         if action[i] > 21:
             j = 1
 
-        reward = self.calculate_reward(AVAILBABLE_SPACES[action[i]-(j*22)], j, board)
+        reward = self.calculate_reward(AVAILBABLE_SPACES[action[i]-(j*22)], self.hand[j], board)
+        print(f"Reward: {reward}")
         
         valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
         if not valid:
@@ -294,7 +312,7 @@ class Agent(Player):
         self.taken_spaces[action[i]-(j*22)] = 1
 
         if self.objectives_placed == True:
-            self.pick(shop, 2)
+            self.pick(shop, board)
 
         done = False
 
@@ -304,16 +322,28 @@ class Agent(Player):
 
         return done, points, reward
     
-    def calculate_reward(self, space, tile_idx, board):
+    def calculate_reward(self, space, tile, board):
         reward = 0
         neighbors = board.contains_tiles(board.find_existing_spaces(space.get_all_neighbors()))
         for neighbor in neighbors:
-            if neighbor.tile.colour == self.hand[tile_idx].colour and neighbor.tile.colour_used == False:
-                reward += 3
-            if neighbor.tile.pattern == self.hand[tile_idx].pattern and neighbor.tile.pattern_used == False:
-                reward += board.cats[self.hand[tile_idx].pattern.name].points
+            if type(neighbor.tile) is Objective_Tile:
+                colour_array = np.array(neighbor.tile.state[:6])
+                pattern_array = np.array(neighbor.tile.state[6:12])
+                colour_idxs = np.where(colour_array == 1)[0]
+                pattern_idxs = np.where(pattern_array == 1)[0]
+                if tile.colour.value in colour_idxs:
+                    reward += 1
+                if tile.pattern.value in pattern_idxs:
+                    reward += 1
+                continue
+            if neighbor.tile.colour == tile.colour and neighbor.tile.colour_used == False:
+                colour_chain = board.find_chain(neighbor, mode="colour")
+                reward += len(colour_chain) #3
+            if neighbor.tile.pattern == tile.pattern and neighbor.tile.pattern_used == False:
+                pattern_chain = board.find_chain(neighbor, mode="pattern")
+                reward += len(pattern_chain) #board.cats[tile.pattern.name].points
         if reward == 0:
-            reward -= (board.cats[self.hand[tile_idx].pattern.name].points + 3)
+            reward -= 1 #(board.cats[tile.pattern.name].points + 3)
         return reward
 
     def get_action(self, state, explore=False):
