@@ -86,7 +86,8 @@ class Agent(Player):
             space_state = [0]*14
             if space.tile != None:
                 if type(space.tile) is Objective_Tile:
-                    space_state = [1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 0]
+                    space_state = space.tile.state
+                    print(f"{space.tile.objective} State : {space_state}")
                 else:
                     colour = space.tile.colour.value
                     pattern = space.tile.pattern.value
@@ -128,7 +129,6 @@ class Agent(Player):
 
         return state
 
-    
     def get_state(self, board : Board):
         objectives_spaces = [tuple([0, 4, -4]), tuple([2, 2, -4]), tuple([3, 3, -6])]
         board_state = []

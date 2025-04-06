@@ -62,7 +62,7 @@ class Game_Manager:
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
         self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
-        self.disable_graphics = True
+        self.disable_graphics = False
 
         self.restart_game()
 
@@ -80,6 +80,9 @@ class Game_Manager:
 
         boards = self.read_json()
         board_colours = np.array(['blue', 'blue', 'blue', 'blue'])
+
+        for objective in objective_tiles:
+            objective.reset()
 
         for player in self.players:
             #np.random.shuffle(objective_tiles)
@@ -162,7 +165,7 @@ class Game_Manager:
 
     def next_turn(self):
         self.turn += 1
-        #input("Press Enter for Next Turn!")
+        input("Press Enter for Next Turn!")
         #pygame.time.wait(2000)
 
     def step(self, events):

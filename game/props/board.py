@@ -200,7 +200,47 @@ class Board:
             neighbors = self.contains_tiles(self.find_existing_spaces(objective.get_all_neighbors()))
             if len(neighbors) == 6:
                 points += self.complete_objective(objective)
+            else:
+                objective.tile.state = self.update_objective_state(objective, neighbors)
         return points
+    
+    def update_objective_state(self, objective_space, neighbors):
+        state = [0]*14
+        tile = objective_space.tile
+        current_colours = {}
+        current_patterns = {}
+        if len(neighbors) == 0:
+            return state
+        for neighbor in neighbors:
+            colour = neighbor.tile.colour.value
+            pattern = neighbor.tile.pattern.value
+            if colour not in current_colours.keys():
+                current_colours[colour] = 1
+            else:
+                current_colours[colour] += 1
+            {k: v for k, v in sorted(current_colours.items(), key=lambda item: item[1])}
+            colour_idx = list(current_colours.keys()).index(colour)
+            if len(current_colours.keys()) > len(tile.objective_rules.keys()):
+                state[12] = 1
+            elif len(current_colours.keys()) < len(tile.objective_rules.keys()):
+                state[colour] = 1
+            elif current_colours[list(current_colours.keys())[colour_idx]] < tile.objective_rules[list(tile.objective_rules.keys())[colour_idx]]:
+                state[colour] = 1
+            
+            if pattern not in current_patterns.keys():
+                current_patterns[pattern] = 1
+            else:
+                current_patterns[pattern] += 1
+            {k: v for k, v in sorted(current_patterns.items(), key=lambda item: item[1])}
+            pattern_idx = list(current_patterns.keys()).index(pattern)
+            if len(current_patterns.keys()) > len(tile.objective_rules.keys()):
+                state[13] = 1
+            elif len(current_patterns.keys()) < len(tile.objective_rules.keys()):
+                state[pattern+6] = 1
+            elif current_patterns[list(current_patterns.keys())[pattern_idx]] < tile.objective_rules[list(tile.objective_rules.keys())[pattern_idx]]:
+                state[pattern+6] = 1
+
+        return state
 
     def analyse_colour(self, space):
         chain = self.find_chain(space)

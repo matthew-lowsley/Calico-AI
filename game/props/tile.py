@@ -50,6 +50,7 @@ class Objective_Tile(Tile):
         self.objective = objective
         self.gold_points = 0
         self.blue_points = 0
+        self.state = [0]*14
         self.get_objective_rules()
 
     def get_objective_rules(self):
@@ -82,6 +83,9 @@ class Objective_Tile(Tile):
                 self.objective_rules = {'A':2, 'B':2, 'C':2}
                 self.gold_points = 0
                 self.blue_points = 0
+    
+    def reset(self):
+        self.state = [0]*14
 
 class Bag:
 
