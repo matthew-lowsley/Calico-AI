@@ -1,6 +1,8 @@
 from game.player.DQL_player.Agent import Agent
 from game.player.DQL_player.Memory import Memory
-from game.player.DQL_player.Model import CQNet, QNet, QTrainer
+from game.player.DQL_player.Model import CQNet, QNet
+from game.player.DQL_player.Model2 import CQNet2
+from game.player.DQL_player.Trainer import QTrainer
 from game.player.random_player import Random_Player
 from game.player.score_plotter import Plotter
 from .props.board import Board
@@ -35,11 +37,11 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
-main_net = CQNet()
-target_net = CQNet()
+main_net = CQNet2()
+target_net = CQNet2()
 main_net.to(DEVICE)
 target_net.to(DEVICE)
-trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-28.76-1743369598.6764956.pth')
+trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
 memory = Memory()
 
 class Game_Manager:
@@ -49,7 +51,7 @@ class Game_Manager:
 
         self.current_player = 0
         self.boards = [Board()]
-        self.players = [Agent(memory, trainer, False)]
+        self.players = [Agent(memory, trainer, True)]
         self.scores = [[] for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
@@ -62,7 +64,7 @@ class Game_Manager:
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
         self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
-        self.disable_graphics = False
+        self.disable_graphics = True
 
         self.restart_game()
 
@@ -79,7 +81,7 @@ class Game_Manager:
         self.cats = starting_cats
 
         boards = self.read_json()
-        board_colours = np.array(['blue', 'blue', 'blue', 'blue'])
+        board_colours = np.array(['blue', 'yellow', 'blue', 'blue'])
 
         for objective in objective_tiles:
             objective.reset()
@@ -165,7 +167,7 @@ class Game_Manager:
 
     def next_turn(self):
         self.turn += 1
-        input("Press Enter for Next Turn!")
+        #input("Press Enter for Next Turn!")
         #pygame.time.wait(2000)
 
     def step(self, events):

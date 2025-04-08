@@ -9,7 +9,8 @@ import torch
 
 from game.constants import BATCH_SIZE, LR, MAX_MEMORY, REPLAY_RECENT, VALIDATE_EVERY, Pattern, DEVICE
 from game.player.DQL_player.Memory import Memory
-from game.player.DQL_player.Model import QNet, QTrainer
+from game.player.DQL_player.Model import QNet
+from game.player.DQL_player.Trainer import QTrainer
 from game.player.player import Player
 from game.props.board import Board, Space
 from game.props.cat import Almond, Callie, Cira, Coconut, Gwenivere, Leo, Oliver, Rumi, Tecolote, Tibbit
@@ -37,8 +38,8 @@ class Agent(Player):
     def __init__(self, memory, trainer, is_head):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 0 #0.8
-        self.epsilon_decay = 0 #0.001
+        self.epsilon = 0.8 #0.8
+        self.epsilon_decay = 0.001 #0.001
         self.gamma = 0.95
         
         self.memory = memory
@@ -87,7 +88,7 @@ class Agent(Player):
             if space.tile != None:
                 if type(space.tile) is Objective_Tile:
                     space_state = space.tile.state
-                    print(f"{space.tile.objective} State : {space_state}")
+                    #print(f"{space.tile.objective} State : {space_state}")
                 else:
                     colour = space.tile.colour.value
                     pattern = space.tile.pattern.value
@@ -300,7 +301,7 @@ class Agent(Player):
             j = 1
 
         reward = self.calculate_reward(AVAILBABLE_SPACES[action[i]-(j*22)], self.hand[j], board)
-        print(f"Reward: {reward}")
+        #print(f"Reward: {reward}")
         
         valid, points = self.place(board, AVAILBABLE_SPACES[action[i]-(j*22)], j)
         if not valid:
