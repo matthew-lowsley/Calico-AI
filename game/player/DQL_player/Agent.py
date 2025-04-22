@@ -38,8 +38,8 @@ class Agent(Player):
     def __init__(self, memory, trainer, is_head):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 0.8 #0.8
-        self.epsilon_decay = 0.001 #0.001
+        self.epsilon = 0.0 #0.8
+        self.epsilon_decay = 0.000 #0.001
         self.gamma = 0.95
         
         self.memory = memory
@@ -233,7 +233,7 @@ class Agent(Player):
                     print(f'Training from Long Term Memory! Epsilon at: {epsilon}')
                     self.train_long_memory()
 
-        self.get_state2(board)
+        #self.get_state2(board)
 
         return True
 
@@ -354,7 +354,7 @@ class Agent(Player):
         hand_state = torch.tensor(state['hand'], dtype=torch.float, device=DEVICE)
 
         if explore:
-            print("Random Move!")
+            #print("Random Move!")
             #position = [0]*44
             #valid_spaces = [i for i, x in enumerate(self.taken_spaces) if x == 0]
             #tile_selection = random.randint(0, 1)
@@ -365,7 +365,7 @@ class Agent(Player):
             final_move = self.trainer.mask_action(torch.tensor(random_q_values, dtype=torch.float, device=DEVICE), board_state)
             final_move = final_move.detach().cpu().numpy()
         else:
-            print("Net Move!")
+            #print("Net Move!")
             q_values = self.trainer.get_action(board_state, hand_state)
             #position_q_values, hand_q_values, pick_q_values = self.net(state0)
             #q_values = torch.cat((position_q_values, hand_q_values, pick_q_values))

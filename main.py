@@ -30,6 +30,9 @@ def main():
 
             game.plotter.plot_scores(game.scores, n_games)
 
+            if n_games >= 10000:
+                exit()
+
             game.restart_game()
     
     pygame.QUIT()

@@ -8,7 +8,7 @@ from game.player.score_plotter import Plotter
 from .props.board import Board
 from .props.tile import Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
-from .constants import DEVICE, FONT, LR, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
+from .constants import DEVICE, FONT, LR, VALIDATE_EVERY, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
 from .props.cat import *
 
 import numpy as np
@@ -37,11 +37,11 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
-main_net = CQNet2()
-target_net = CQNet2()
+main_net = CQNet()
+target_net = CQNet()
 main_net.to(DEVICE)
 target_net.to(DEVICE)
-trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95)
+trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-34.11-final-version.pth')
 memory = Memory()
 
 class Game_Manager:
@@ -50,9 +50,12 @@ class Game_Manager:
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board()]
-        self.players = [Agent(memory, trainer, True)]
+        self.boards = [Board(), Board()]
+        self.players = [Agent(memory, trainer, False), Random_Player()]
         self.scores = [[] for _ in range(len(self.players))]
+        self.n_games = 0
+        self.wins = [0 for _ in range(len(self.players))]
+        self.highest_score_per_X_games = [0 for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
@@ -64,6 +67,7 @@ class Game_Manager:
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
         self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
+        self.average_score_plotter = Plotter(len(self.players), f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
         self.disable_graphics = True
 
         self.restart_game()
@@ -139,10 +143,8 @@ class Game_Manager:
 
         pygame.display.update()
 
-    def draw_end_screen(self):
+    def draw_end_screen(self, winner, highest):
         self.win.fill((255, 255, 255))
-
-        winner, highest = self.calculate_winner()
                 
         message = FONT.render("Player "+str(winner+1)+" Wins! With "+str(highest)+" Points!", True, (0,0,0))
         self.win.blit(message, pygame.Rect(WIDTH/2, HEIGHT/2, 50, 50))
@@ -160,10 +162,14 @@ class Game_Manager:
         
         return winner, highest_score
     
-    def calculate_scores(self):
+    def calculate_scores(self, winner):
+
+        self.wins[winner] += 1
 
         for i in range(len(self.players)):
             self.scores[i].append(self.players[i].points)
+            print(f"Player {i+1} Average Score: {sum(self.scores[i])/len(self.scores[i])}")
+            print(f"Player {i+1} Win Rate: {self.wins[i]/self.n_games}")
 
     def next_turn(self):
         self.turn += 1
@@ -187,8 +193,20 @@ class Game_Manager:
         #print(f'Turn {self.turn} : {self.shop.tiles}')
 
         if self.turn >= self.final_turn:
-            self.calculate_scores()
-            if not self.disable_graphics: self.draw_end_screen()
+            self.n_games += 1
+            winner, highest = self.calculate_winner()
+            self.calculate_scores(winner)
+            if self.n_games % 100 == 0:
+                last_100_scores = []
+                for i in range(len(self.players)):
+                    last_100_scores.append(self.scores[i][-100:])
+                    average = sum(self.scores[i][-100:])/100
+                    if average > self.highest_score_per_X_games[i]:
+                        self.highest_score_per_X_games[i] = average
+                    print(f"Player {i+1} Highest score per 100 game: {self.highest_score_per_X_games[i]}")
+                self.average_score_plotter.plot_average_scores(last_100_scores, 100)
+            if not self.disable_graphics: 
+                self.draw_end_screen(winner, highest)
             #self.restart_game()
             #print("Samples Collected: "+str(len(memory.queue)))
             return True

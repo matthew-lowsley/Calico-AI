@@ -60,11 +60,13 @@ class Plotter():
 
     def plot_average_scores(self, scores, x_games):
 
-        score = sum(scores) / x_games
-        self.scores[0].append(score)
+        for i in range(self.n_players):
+            score = sum(scores[i]) / x_games
+            self.scores[i].append(score)
         
-        self.lines[0].set_ydata(self.scores[0])
-        self.lines[0].set_xdata(range(len(self.scores[0])))
+        for i, line in enumerate(self.lines):
+            line.set_ydata(self.scores[i])
+            line.set_xdata(range(len(self.scores[i])))
 
         self.ax.set_title(f"Average Score Every {x_games} Games")
         self.ax.relim()
@@ -73,7 +75,7 @@ class Plotter():
         plt.pause(0.001)
 
         
-        if self.n_games % 50 == 0:
+        if self.n_games % x_games == 0:
             self.fig.savefig(self.file_name+'.png')
 
         self.n_games += 1
