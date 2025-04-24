@@ -9,6 +9,7 @@ from .hex.hex import Vector2
 pygame.font.init()
 
 FONT = pygame.font.Font('freesansbold.ttf', 24)
+FONT_SMALL = pygame.font.Font('freesansbold.ttf', 12)
 BOARD_JSON = os.path.join("game", "boards", "boards.json")
 
 class Colour(Enum):

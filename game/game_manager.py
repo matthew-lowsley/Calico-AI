@@ -1,3 +1,4 @@
+import os
 from game.player.DQL_player.Agent import Agent
 from game.player.DQL_player.Memory import Memory
 from game.player.DQL_player.Model import CQNet, QNet
@@ -6,7 +7,7 @@ from game.player.DQL_player.Trainer import QTrainer
 from game.player.random_player import Random_Player
 from game.player.score_plotter import Plotter
 from .props.board import Board
-from .props.tile import Objective_Tile, Tile, Shop, Bag
+from .props.tile import DIR, TILE_TEXTURES_FOLDER, Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
 from .constants import DEVICE, FONT, LR, VALIDATE_EVERY, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
 from .props.cat import *
@@ -41,12 +42,12 @@ main_net = CQNet()
 target_net = CQNet()
 main_net.to(DEVICE)
 target_net.to(DEVICE)
-trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-34.11-final-version.pth')
+trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-34.11-final-version.pth', plot=False)
 memory = Memory()
 
 class Game_Manager:
 
-    def __init__(self, win):
+    def __init__(self, win, disable_graphics=False, plot=False):
         self.win = win
 
         self.current_player = 0
@@ -66,9 +67,17 @@ class Game_Manager:
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
-        self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
-        self.average_score_plotter = Plotter(len(self.players), f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
-        self.disable_graphics = True
+        if plot:
+            self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
+            self.average_score_plotter = Plotter(len(self.players), f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
+        else:
+            self.plotter = None
+            self.average_score_plotter = None  
+
+        self.disable_graphics = disable_graphics
+
+        background_texture = os.path.join(DIR, TILE_TEXTURES_FOLDER, "zwood2_background.jpg")
+        self.background_img = pygame.image.load(background_texture)
 
         self.restart_game()
 
@@ -124,7 +133,8 @@ class Game_Manager:
             #print(f'Player Starting Hand : {player.hand}')
 
     def draw(self):
-        self.win.fill((255, 255, 255))
+        #self.win.fill((255, 255, 255))
+        self.win.blit(self.background_img, (0,0))
 
         self.boards[self.current_player].draw(self.win)
         self.players[self.current_player].draw_hand(self.win)
@@ -168,8 +178,8 @@ class Game_Manager:
 
         for i in range(len(self.players)):
             self.scores[i].append(self.players[i].points)
-            print(f"Player {i+1} Average Score: {sum(self.scores[i])/len(self.scores[i])}")
-            print(f"Player {i+1} Win Rate: {self.wins[i]/self.n_games}")
+            #print(f"Player {i+1} Average Score: {sum(self.scores[i])/len(self.scores[i])}")
+            #print(f"Player {i+1} Win Rate: {self.wins[i]/self.n_games}")
 
     def next_turn(self):
         self.turn += 1
@@ -204,7 +214,7 @@ class Game_Manager:
                     if average > self.highest_score_per_X_games[i]:
                         self.highest_score_per_X_games[i] = average
                     print(f"Player {i+1} Highest score per 100 game: {self.highest_score_per_X_games[i]}")
-                self.average_score_plotter.plot_average_scores(last_100_scores, 100)
+                if self.average_score_plotter: self.average_score_plotter.plot_average_scores(last_100_scores, 100)
             if not self.disable_graphics: 
                 self.draw_end_screen(winner, highest)
             #self.restart_game()

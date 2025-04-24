@@ -1,5 +1,5 @@
 from ..hex.hex import Hex, hex_to_pixel, Vector2
-from ..constants import FONT, HEX_SIZE, OFFSET, Colour, Pattern
+from ..constants import FONT, FONT_SMALL, HEX_SIZE, OFFSET, Colour, Pattern
 from .tile import Colour_Pattern_Tile, Objective_Tile, Tile
 
 import math
@@ -74,25 +74,26 @@ class Board:
                     print(i)
                     break
 
-    def draw_space(self, win, position, position_number):
+    def draw_space(self, win, space, position, position_number):
         points = []
         for i in range(6):
             angle = math.radians(i * 60 - 30)
             x = position.x + HEX_SIZE.x * math.cos(angle)
             y = position.y + HEX_SIZE.y * math.sin(angle)
             points.append([x, y])
+        pygame.draw.polygon(win, (255, 255, 255), points)
+        if space.tile != None:
+                space.tile.draw(win, position, HEX_SIZE)
         pygame.draw.polygon(win, (255, 0, 0), points, 5)
-        points = FONT.render(str(position_number), True, (0,0,0))
-        win.blit(points, position)
+        points = FONT_SMALL.render(str(position_number), True, (0,0,0))
+        win.blit(points, Vector2(position.x-6, position.y+22))
 
     def draw(self, win):
 
         for i, key in enumerate(self.board.keys()):
             space = self.board[key]
             position = hex_to_pixel(space, HEX_SIZE, OFFSET)
-            if space.tile != None:
-                space.tile.draw(win, position, HEX_SIZE)
-            self.draw_space(win, position, i)
+            self.draw_space(win, space, position, i)
 
     def find_existing_spaces(self, spaces):
         existing_spaces = []

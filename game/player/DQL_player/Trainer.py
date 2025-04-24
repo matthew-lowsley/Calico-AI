@@ -12,7 +12,7 @@ from ..score_plotter import Plotter
 
 class QTrainer:
 
-    def __init__(self, net, target_net, lr, gamma, pretrained_model=None):
+    def __init__(self, net, target_net, lr, gamma, pretrained_model=None, plot=False):
         self.lr = lr
         self.gamma = gamma
         self.net = net
@@ -33,7 +33,11 @@ class QTrainer:
         self.recent_scores = []
         self.highest_average_score = 0
 
-        self.Qplotter = Plotter(1, "Games (K)", "Average Action Value (Q)", "Average Q per Game", "Average_Q_Values")
+        if plot:
+            self.Qplotter = Plotter(1, "Games (K)", "Average Action Value (Q)", "Average Q per Game", "Average_Q_Values")
+        else:
+            self.Qplotter = None
+        
         self.max_q_average = []
 
         #self.average_score_plotter = Plotter(1, f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
@@ -138,25 +142,26 @@ class QTrainer:
 
     def validate_and_plot(self):
         
-        max_q_current = []
+        if self.Qplotter:
+            max_q_current = []
 
-        for state in self.validation_states:
-            board_state = torch.tensor(state['board_state'], dtype=torch.float, device=DEVICE)
-            hand_state = torch.tensor(state['hand_state'], dtype=torch.float, device=DEVICE)
-            #processed_state = self.net.preprocess_input(state)
-            pred = self.get_action(board_state, hand_state)
-            max_q_current.append(torch.max(pred).detach().cpu().numpy())
+            for state in self.validation_states:
+                board_state = torch.tensor(state['board_state'], dtype=torch.float, device=DEVICE)
+                hand_state = torch.tensor(state['hand_state'], dtype=torch.float, device=DEVICE)
+                #processed_state = self.net.preprocess_input(state)
+                pred = self.get_action(board_state, hand_state)
+                max_q_current.append(torch.max(pred).detach().cpu().numpy())
 
-        self.max_q_average.append(sum(max_q_current)/len(self.validation_states))
+            self.max_q_average.append(sum(max_q_current)/len(self.validation_states))
 
-        #print(self.max_q_average)
+            #print(self.max_q_average)
 
-        self.average_score_plotter.plot_average_scores(self.recent_scores, VALIDATE_EVERY)
+            self.average_score_plotter.plot_average_scores(self.recent_scores, VALIDATE_EVERY)
 
-        if (sum(self.recent_scores)/len(self.recent_scores)) > self.highest_average_score:
-            self.highest_average_score = (sum(self.recent_scores)/len(self.recent_scores))
-            self.net.save(f'model-{str(self.highest_average_score)}-{str(time.time())}.pth')
+            if (sum(self.recent_scores)/len(self.recent_scores)) > self.highest_average_score:
+                self.highest_average_score = (sum(self.recent_scores)/len(self.recent_scores))
+                self.net.save(f'model-{str(self.highest_average_score)}-{str(time.time())}.pth')
 
-        self.recent_scores = []
+            self.recent_scores = []
 
-        self.Qplotter.plot_Q(self.max_q_average)
+            self.Qplotter.plot_Q(self.max_q_average)
