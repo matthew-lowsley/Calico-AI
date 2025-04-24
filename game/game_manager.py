@@ -9,7 +9,7 @@ from game.player.score_plotter import Plotter
 from .props.board import Board
 from .props.tile import DIR, TILE_TEXTURES_FOLDER, Objective_Tile, Tile, Shop, Bag
 from .player.human_player import Human_Player
-from .constants import DEVICE, FONT, LR, VALIDATE_EVERY, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
+from .constants import DEVICE, FONT, FONT_SMALL, LR, VALIDATE_EVERY, Colour, Objective, Pattern, BOARD_JSON, WIDTH, HEIGHT
 from .props.cat import *
 
 import numpy as np
@@ -38,21 +38,14 @@ starting_cats = {
     'FERNS': Gwenivere(Pattern.FERNS)
 }
 
-main_net = CQNet()
-target_net = CQNet()
-main_net.to(DEVICE)
-target_net.to(DEVICE)
-trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model='model-34.11-final-version.pth', plot=False)
-memory = Memory()
-
 class Game_Manager:
 
-    def __init__(self, win, disable_graphics=False, plot=False):
+    def __init__(self, win, players, disable_graphics=False, plot=False):
         self.win = win
 
         self.current_player = 0
-        self.boards = [Board(), Board()]
-        self.players = [Agent(memory, trainer, False), Random_Player()]
+        self.players = players
+        self.boards = [Board() for _ in range(len(self.players))]
         self.scores = [[] for _ in range(len(self.players))]
         self.n_games = 0
         self.wins = [0 for _ in range(len(self.players))]
@@ -67,12 +60,12 @@ class Game_Manager:
 
         self.points_areas = [pygame.Rect(50, 100, 50, 50), pygame.Rect(50, 150, 50, 50), pygame.Rect(50, 200, 50, 50), pygame.Rect(50, 250, 50, 50)]
 
+        self.plotter = None
+        self.average_score_plotter = None
+
         if plot:
             self.plotter = Plotter(len(self.players), "Games", "Mean Score", "Agents Scores", "Average_Scores")
-            self.average_score_plotter = Plotter(len(self.players), f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')
-        else:
-            self.plotter = None
-            self.average_score_plotter = None  
+            self.average_score_plotter = Plotter(len(self.players), f'Games ({VALIDATE_EVERY}s)', 'Scores', f'Average Score Every {VALIDATE_EVERY} Games', f'Average_Score_Every_{VALIDATE_EVERY}_games')  
 
         self.disable_graphics = disable_graphics
 
@@ -141,7 +134,9 @@ class Game_Manager:
 
         for i in range(len(self.players)):
             points = FONT.render("Player "+str(i+1)+" - "+str(self.players[i].points), True, (0,0,0))
+            #player_type = FONT_SMALL.render(str(type(self.players[i])), True, (0,0,0))
             self.win.blit(points, self.points_areas[i])
+            #self.win.blit(player_type, pygame.Rect(self.points_areas[i].x, self.points_areas[i].y+24, 50, 50))
 
         self.shop.draw(self.win)
 

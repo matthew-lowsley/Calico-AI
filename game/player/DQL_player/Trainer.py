@@ -17,6 +17,7 @@ class QTrainer:
         self.gamma = gamma
         self.net = net
         if pretrained_model:
+            print(f"Pretrained Model in use: {pretrained_model}")
             self.net.load_state_dict(torch.load(os.path.join('./models', pretrained_model), map_location=torch.device(DEVICE)))
             self.net.eval()
         self.target = target_net

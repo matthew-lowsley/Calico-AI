@@ -97,5 +97,5 @@ class Human_Player(Player):
                         else:
                             break
         return False
-        
-                    
+    
+                   
