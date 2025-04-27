@@ -12,7 +12,7 @@ parser.add_argument("--mode", "-m",
                     default="play",
                     type=str)
 parser.add_argument("--players", "-p",
-                    help="Add a custom selection of player agents. \n Options: h=human-controlled, r=random-agent, q=dq-agent \n Format: [q,h,r] = 1 dq-agent, 1 human-controlled, 1 random. \n Maximum players is four. \n Default is [q,r,h]. ",
+                    help="Add a custom selection of player agents. \n Options: h=human-controlled, r=random-agent, q=dq-agent \n Format: q,h,r = 1 dq-agent, 1 human-controlled, 1 random. \n Maximum players is four. \n Default is q,r,h. ",
                     nargs='?',
                     default="q,r,h",
                     type=str)
