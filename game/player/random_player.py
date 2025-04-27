@@ -65,6 +65,9 @@ class Random_Player(Player):
         self.place(board)
         self.pick(shop)
         return True
+    
+    def __repr__(self) -> str:
+        return "Random-Agent"
 
 
 

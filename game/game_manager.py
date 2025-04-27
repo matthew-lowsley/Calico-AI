@@ -52,7 +52,7 @@ class Game_Manager:
         self.highest_score_per_X_games = [0 for _ in range(len(self.players))]
         self.turn = 0
         self.cats = None
-        self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
+        self.cat_areas = [pygame.Rect(50, 950, 50, 50), pygame.Rect(50, 980, 50, 50), pygame.Rect(50, 1010, 50, 50)]
         self.wait_time = wait_time
 
         self.bag = Bag()
@@ -70,7 +70,7 @@ class Game_Manager:
 
         self.disable_graphics = disable_graphics
 
-        background_texture = os.path.join(DIR, TILE_TEXTURES_FOLDER, "zwood2_background.jpg")
+        background_texture = os.path.join(DIR, TILE_TEXTURES_FOLDER, "zwood_bg2.png")
         self.background_img = pygame.image.load(background_texture)
 
         self.restart_game()
@@ -138,9 +138,9 @@ class Game_Manager:
 
         for i in range(len(self.players)):
             points = FONT.render("Player "+str(i+1)+" - "+str(self.players[i].points), True, (0,0,0))
-            #player_type = FONT_SMALL.render(str(type(self.players[i])), True, (0,0,0))
+            player_type = FONT_SMALL.render(str(self.players[i]), True, (0,0,0))
             self.win.blit(points, self.points_areas[i])
-            #self.win.blit(player_type, pygame.Rect(self.points_areas[i].x, self.points_areas[i].y+24, 50, 50))
+            self.win.blit(player_type, pygame.Rect(self.points_areas[i].x, self.points_areas[i].y+24, 50, 50))
 
         self.shop.draw(self.win)
 
@@ -153,12 +153,14 @@ class Game_Manager:
         pygame.display.update()
 
     def draw_end_screen(self, winner, highest):
-        self.win.fill((255, 255, 255))
+        self.win.blit(self.background_img, (0,0))
                 
         message = FONT.render("Player "+str(winner+1)+" Wins! With "+str(highest)+" Points!", True, (0,0,0))
         self.win.blit(message, pygame.Rect(WIDTH/2, HEIGHT/2, 50, 50))
 
         pygame.display.update()
+
+        pygame.time.wait(self.wait_time*3)
 
     def calculate_winner(self):
 

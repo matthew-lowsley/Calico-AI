@@ -14,8 +14,8 @@ parser.add_argument("--mode", "-m",
 parser.add_argument("--players", "-p",
                     help="Add a custom selection of player agents. \n Options: h=human-controlled, r=random-agent, q=dq-agent \n Format: [q,h,r] = 1 dq-agent, 1 human-controlled, 1 random. \n Maximum players is four. \n Default is [q,r,h]. ",
                     nargs='?',
-                    default=['q', 'r', 'h'],
-                    type=list[str])
+                    default="q,r,h",
+                    type=str)
 parser.add_argument("--model",
                     help="Select a pretrained model to use. In Train mode this option is None. In Play mode this option is model-34.11-final-version.pth",
                     nargs='?',
@@ -58,7 +58,7 @@ if args.mode.upper() == "PLAY":
     PLOT = False
     DISABLE_GRAPHICS = False
     PRETRAINED_MODEL = 'model-34.11-final-version.pth'
-    SCREEN_FORMAT = pygame.FULLSCREEN
+    #SCREEN_FORMAT = pygame.FULLSCREEN
     WAIT_TIME = 2000
 elif args.mode.upper() == "TRAIN":
     PLOT = True
@@ -72,7 +72,6 @@ if args.headless != None:
 
 if args.graph != None:
     PLOT = args.graph
-    SCREEN_FORMAT = pygame.RESIZABLE
 
 main_net = CQNet()
 target_net = CQNet()
@@ -82,16 +81,26 @@ trainer = QTrainer(main_net, target_net, lr=LR, gamma=0.95, pretrained_model=PRE
 memory = Memory()
 
 PLAYERS = [Agent(memory, trainer, args.mode.upper() == "TRAIN"), Random_Player(), Human_Player()]
+EPSILON = 0
+EPSILON_DECAY = 0
 
 if args.mode.upper() == "TRAIN":
-    PLAYERS = [Agent(memory, trainer, True)]
+    EPSILON = 0.8
+    EPSILON_DECAY = 0.001
+    PLAYERS = [Agent(memory, trainer, True, EPSILON , EPSILON_DECAY)]
+
+players = str(args.players)
+players_list = players.split(",")
+args.players = players_list
 
 if args.players != ['q', 'r', 'h']:
     PLAYERS = []
-    for i in range(4):
+    for i in range(len(args.players)):
+        if i > 3:
+            break
         match args.players[i]:
             case 'q':
-                PLAYERS.append(Agent(memory, trainer, args.mode.upper() == "TRAIN"))
+                PLAYERS.append(Agent(memory, trainer, args.mode.upper() == "TRAIN", EPSILON , EPSILON_DECAY))
             case 'r':
                 PLAYERS.append(Random_Player())
             case 'h':
@@ -103,9 +112,10 @@ if args.players != ['q', 'r', 'h']:
             case _:
                 continue
 
-
 WIN = pygame.display.set_mode((WIDTH, HEIGHT), SCREEN_FORMAT)
 pygame.display.set_caption('Calico')
+
+print(PLAYERS)
 
 
 def main():

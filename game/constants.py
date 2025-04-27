@@ -39,16 +39,16 @@ class Objective(Enum):
 
 Transition = namedtuple('Transition', ('board_state', 'hand_state', 'action', 'reward', 'next_board_state', 'next_hand_state','done'))
 
-WIDTH, HEIGHT = 960, 720
+WIDTH, HEIGHT = 1920, 1080 #960, 720
 
-hand_positions = [Vector2(700, 520), Vector2(800, 520), Vector2(700, 620), Vector2(800, 620)]
+hand_positions = [Vector2(1400, 750), Vector2(1550, 750), Vector2(1400, 900), Vector2(1550, 900)]
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Hardware Device: " + str(DEVICE))
 
 FPS = 60
-HEX_SIZE = Vector2(50, 50)
-OFFSET = Vector2(200, 50)
+HEX_SIZE = Vector2(75, 75) #Vector2(50, 50)
+OFFSET = Vector2(400, 100) #Vector2(200, 50)
 
 MAX_MEMORY = 1000 #1000
 BATCH_SIZE = 100

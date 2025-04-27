@@ -98,5 +98,8 @@ class Human_Player(Player):
                         else:
                             break
         return False
+    
+    def __repr__(self) -> str:
+        return "Human-Controlled Agent"
 
 

@@ -1,4 +1,4 @@
-from ..constants import Vector2, HEX_SIZE, Colour, Pattern, Objective
+from ..constants import Vector2, HEX_SIZE, Colour, Pattern, Objective, WIDTH, HEIGHT, OFFSET
 
 import pygame
 import math
@@ -135,9 +135,9 @@ class Bag:
 class Shop: 
     
     def __init__(self, bag : Bag):
-        self.shop_areas = [pygame.Rect(320, 520, HEX_SIZE.x*2, HEX_SIZE.y*2), 
-                           pygame.Rect(420, 520, HEX_SIZE.x*2, HEX_SIZE.y*2), 
-                           pygame.Rect(520, 520, HEX_SIZE.x*2, HEX_SIZE.y*2)]
+        self.shop_areas = [pygame.Rect((WIDTH/2-(HEX_SIZE.x*2))-(OFFSET.x/2), HEIGHT-(HEX_SIZE.x*2)-(OFFSET.y/2), HEX_SIZE.x*2, HEX_SIZE.y*2), 
+                           pygame.Rect((WIDTH/2)-(OFFSET.x/2)               , HEIGHT-(HEX_SIZE.x*2)-(OFFSET.y/2), HEX_SIZE.x*2, HEX_SIZE.y*2), 
+                           pygame.Rect((WIDTH/2+(HEX_SIZE.x*2))-(OFFSET.x/2), HEIGHT-(HEX_SIZE.x*2)-(OFFSET.y/2), HEX_SIZE.x*2, HEX_SIZE.y*2)]
         self.tiles = [None, None, None]
         self.bag = bag
         #self.stock_shop()

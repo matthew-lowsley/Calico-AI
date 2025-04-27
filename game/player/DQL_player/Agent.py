@@ -1,5 +1,3 @@
-
-
 from collections import deque
 import copy
 import random
@@ -35,11 +33,11 @@ AVAILBABLE_SPACES = [Space( 1, 1, -2), Space( 0, 2, -2), Space( 0, 3, -3), Space
 
 class Agent(Player):
 
-    def __init__(self, memory, trainer, is_head):
+    def __init__(self, memory, trainer, is_head, epsilon=0.0, epsilon_decay=0.0):
         super().__init__()
         self.n_games = -1
-        self.epsilon = 0.0 #0.8
-        self.epsilon_decay = 0.000 #0.001
+        self.epsilon = epsilon
+        self.epsilon_decay = epsilon_decay
         self.gamma = 0.95
         
         self.memory = memory
@@ -60,6 +58,9 @@ class Agent(Player):
         self.available_places = []
 
         self.reset()
+
+    def __repr__(self) -> str:
+        return "DQL-Agent"
 
     def reset(self):
 
@@ -200,7 +201,7 @@ class Agent(Player):
 
         # epsilon = 1
         epsilon = self.epsilon - (self.n_games * self.epsilon_decay)
-        if epsilon < 0.01:
+        if epsilon < 0.01 and self.is_head:
             epsilon = 0.01
 
         if self.objectives_placed == False:

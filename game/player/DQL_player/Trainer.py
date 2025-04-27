@@ -28,7 +28,7 @@ class QTrainer:
         self.target.eval()
         self.validation_states = []
 
-        if os.path.isfile('transitions.csv'):
+        if os.path.isfile('transitions.csv') and plot:
             self.load_validation_states()
 
         self.recent_scores = []
@@ -77,12 +77,9 @@ class QTrainer:
         target = pred.clone()
         for idx in range(len(done)):
             if not done[idx]:
-                #print(f"Single next state shape:  {processed_next_states[idx].shape}")
                 next_action = self.net(torch.unsqueeze(processed_next_states[idx], 0), next_hand_state[idx])
                 next_action_masked = self.mask_action(next_action[0], next_board_state[idx])
                 next_action_idx = torch.argmax(next_action_masked).item()
-                #print("Action Masked!")
-                #next_action_idx = torch.argmax(self.net(next_state[idx])).item()
                 Q_new = reward[idx] + self.gamma * self.target(torch.unsqueeze(processed_next_states[idx], 0), next_hand_state[idx])[0][next_action_idx]
             else:
                 Q_new = reward[idx]
@@ -157,7 +154,7 @@ class QTrainer:
 
             #print(self.max_q_average)
 
-            self.average_score_plotter.plot_average_scores(self.recent_scores, VALIDATE_EVERY)
+            #self.average_score_plotter.plot_average_scores(self.recent_scores, VALIDATE_EVERY)
 
             if (sum(self.recent_scores)/len(self.recent_scores)) > self.highest_average_score:
                 self.highest_average_score = (sum(self.recent_scores)/len(self.recent_scores))
