@@ -17,10 +17,25 @@ parser.add_argument("--players", "-p",
                     default=['q', 'r', 'h'],
                     type=list[str])
 parser.add_argument("--model",
-                    help="Select a pretrained model to use.",
+                    help="Select a pretrained model to use. In Train mode this option is None. In Play mode this option is model-34.11-final-version.pth",
                     nargs='?',
                     default=None,
                     type=str)
+parser.add_argument("--speed",
+                    help="The amount of time in ms between each player's turn. Default is 2000 in play mode and 0 in train mode.",
+                    nargs='?',
+                    default=0,
+                    type=int)
+parser.add_argument("--headless",
+                    help="When True no game graphics will be displayed.",
+                    nargs='?',
+                    default=None,
+                    type=bool)
+parser.add_argument("--graph",
+                   help="When True statistics will plotted.",
+                   nargs='?',
+                   default=None,
+                   type=bool)
 args = parser.parse_args()
 
 from game.constants import LR, WIDTH, HEIGHT, DEVICE
@@ -36,14 +51,28 @@ PLOT = False
 DISABLE_GRAPHICS = False
 MAX_GAMES = math.inf
 PRETRAINED_MODEL = args.model
+SCREEN_FORMAT = pygame.RESIZABLE
+WAIT_TIME = 0
 
 if args.mode.upper() == "PLAY":
     PLOT = False
     DISABLE_GRAPHICS = False
     PRETRAINED_MODEL = 'model-34.11-final-version.pth'
+    SCREEN_FORMAT = pygame.FULLSCREEN
+    WAIT_TIME = 2000
 elif args.mode.upper() == "TRAIN":
     PLOT = True
     DISABLE_GRAPHICS = True
+
+if args.speed > 0:
+    WAIT_TIME = args.speed
+
+if args.headless != None:
+    DISABLE_GRAPHICS = args.headless
+
+if args.graph != None:
+    PLOT = args.graph
+    SCREEN_FORMAT = pygame.RESIZABLE
 
 main_net = CQNet()
 target_net = CQNet()
@@ -75,14 +104,14 @@ if args.players != ['q', 'r', 'h']:
                 continue
 
 
-WIN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+WIN = pygame.display.set_mode((WIDTH, HEIGHT), SCREEN_FORMAT)
 pygame.display.set_caption('Calico')
 
 
 def main():
 
     running = True
-    game = Game_Manager(WIN, PLAYERS, disable_graphics=DISABLE_GRAPHICS, plot=PLOT)
+    game = Game_Manager(WIN, PLAYERS, disable_graphics=DISABLE_GRAPHICS, plot=PLOT, wait_time=WAIT_TIME)
     n_games = 0
     
     while running:

@@ -26,6 +26,7 @@ class Human_Player(Player):
         self.hand = []
         self.selected = None
         self.last_placed = None
+        self.objectives_placed = 0
 
     def select_from_hand(self, mouse_x, mouse_y):
         for i in range(len(self.hand)):
@@ -97,5 +98,5 @@ class Human_Player(Player):
                         else:
                             break
         return False
-    
-                   
+
+

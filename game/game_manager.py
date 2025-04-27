@@ -40,7 +40,7 @@ starting_cats = {
 
 class Game_Manager:
 
-    def __init__(self, win, players, disable_graphics=False, plot=False):
+    def __init__(self, win, players, disable_graphics=False, plot=False, wait_time=0):
         self.win = win
 
         self.current_player = 0
@@ -53,6 +53,7 @@ class Game_Manager:
         self.turn = 0
         self.cats = None
         self.cat_areas = [pygame.Rect(50, 640, 50, 50), pygame.Rect(50, 670, 50, 50), pygame.Rect(50, 700, 50, 50)]
+        self.wait_time = wait_time
 
         self.bag = Bag()
         self.shop = Shop(self.bag)
@@ -100,7 +101,10 @@ class Game_Manager:
         #np.random.shuffle(board_colours)
         for i, board in enumerate(self.boards):
             board.create_board()
-            board.create_perimeter(boards['boards'][board_colours[i]])
+            if type(self.players) == Agent:
+                board.create_perimeter(boards['boards']['blue'])
+            else:
+                board.create_perimeter(boards['boards'][board_colours[i]])
             board.cats = self.cats
     
     def configure_cats(self):
@@ -143,7 +147,7 @@ class Game_Manager:
         cats = list(self.cats.values())
         patterns = list(self.cats.keys())
         for i in range(0, 6, 2):
-            cat_descriptions = FONT.render(str(cats[i].name)+": "+str(cats[i].description)+" - "+str(patterns[i])+" / "+str(patterns[i+1]), True, (0,0,0))
+            cat_descriptions = FONT.render(str(cats[i].name)+": "+str(cats[i].description)+" - "+str(patterns[i])+" / "+str(patterns[i+1]+" -> "+str(cats[i].points)+" points"), True, (0,0,0))
             self.win.blit(cat_descriptions, self.cat_areas[int(i/2)])
 
         pygame.display.update()
@@ -179,13 +183,17 @@ class Game_Manager:
     def next_turn(self):
         self.turn += 1
         #input("Press Enter for Next Turn!")
-        #pygame.time.wait(2000)
+        if self.wait_time > 0:
+            pygame.time.wait(self.wait_time)
 
     def step(self, events):
 
         self.current_player = self.turn % len(self.players)
 
         if not self.disable_graphics: self.draw()
+
+        if self.wait_time > 0 and type(self.players[self.current_player]) != Human_Player:
+            pygame.time.wait(self.wait_time)
 
         if self.players[self.current_player].act(self.boards[self.current_player], self.shop, events):
             if not self.disable_graphics: self.draw()
