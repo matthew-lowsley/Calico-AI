@@ -1,27 +1,23 @@
 
 # CalicoAI COMP3000
 
-Name: Matthew Lowsley
-
-Supervisor: Vasilios Kelefouras
-
 ## Abstract : 
 
-Recent advances in Deep Reinforcement Learning have created board game AI, capable of beating even the highest skilled players. The most recent and notable example of this is AlphaZero’s mastery of Go, Chess and Shori with much of the mainstream media attention focusing on similar traditional, deterministic, abstract strategy games. However, many contemporary board games incorporate elements of luck and randomness to create more dynamic gameplay experiences. In this report, the effectiveness of a long-standing deep reinforcement learning method, Deep Q-learning, will be tested in a modern scholastic boardgame environment, the 2020 board game Calico. It will explore the mechanisms and parameters necessary to train a Deep Q-learning agent in such an environment. Discuss, and provide solutions to, stabilization issues faced.  As well as investigating multiple network architectures. By the end, the results suggest that a Deep Q-learning agent can generalize certain versions of the Calico environment, and produce a capable policy given the correct combination of state representation, stabilization methods, and reward function engineering.  The evaluation shows the final trained model can outperform an agent making arbitrary decisions by a significant margin, with the model even able to beat some novice human players. Remarks on future research suggest expanding the scope of the game environment, allowing the AI access to additional information, giving the AI a larger section of actions as well as possibly testing other deep reinforcement learning techniques in the Calico environment. 
+Recent advances in Deep Reinforcement Learning have created board game AI, capable of beating even the highest skilled players. The most recent and notable example of this is AlphaZero’s mastery of Go, Chess and Shori with much of the mainstream media attention focusing on similar traditional, deterministic, abstract strategy games. However, many contemporary board games incorporate elements of luck and randomness to create more dynamic gameplay experiences. In this report, the effectiveness of a long-standing deep reinforcement learning method, Deep Q-learning, will be tested in a modern stochastic boardgame environment, the 2020 board game Calico. It will explore the mechanisms and parameters necessary to train a Deep Q-learning agent in such an environment. Discuss, and provide solutions to, stabilization issues faced.  As well as investigating multiple network architectures. By the end, the results suggest that a Deep Q-learning agent can generalize certain versions of the Calico environment, and produce a capable policy given the correct combination of state representation, stabilization methods, and reward function engineering.  The evaluation shows the final trained model can outperform an agent making arbitrary decisions by a significant margin, with the model even able to beat some novice human players. Remarks on future research suggest expanding the scope of the game environment, allowing the AI access to additional information, giving the AI a larger section of actions as well as possibly testing other deep reinforcement learning techniques in the Calico environment. 
 
 ## Features :
 
 ### Playable Deep Q-Learning Agent
 
-![gameplay_gif](https://github.com/matthew-lowsley/Calico-AI-matthew-lowsley/blob/main/readme_images/readme1.gif)
+![gameplay_gif](https://github.com/matthew-lowsley/Calico-AI/blob/main/readme_images/readme1.gif)
 
 ### Training Statistics
 
-![graphs_img](https://github.com/matthew-lowsley/Calico-AI-matthew-lowsley/blob/main/readme_images/readme2.PNG)
+![graphs_img](https://github.com/matthew-lowsley/Calico-AI/blob/main/readme_images/readme2.PNG)
 
 ### Convolutional Architecture
 
-![network_diagram](https://github.com/matthew-lowsley/Calico-AI-matthew-lowsley/blob/main/readme_images/readme3.png)
+![network_diagram](https://github.com/matthew-lowsley/Calico-AI/blob/main/readme_images/readme3.png)
 
 ## How to Install and Run :
 
